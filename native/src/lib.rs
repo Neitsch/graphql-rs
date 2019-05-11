@@ -10,9 +10,14 @@ extern crate serde_derive;
 mod language;
 
 use neon::prelude::*;
+use std::fs;
 
 export! {
     fn parse(source: String) -> language::ast::Document {
         source.into()
+    }
+    fn parse_file(source_file: String) -> () {
+        let res: language::ast::Document = fs::read_to_string(source_file).unwrap().into();
+        assert_eq!(res.definitions.len(), 8);
     }
 }
