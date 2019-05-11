@@ -1,4 +1,5 @@
-struct Location {
+#[derive(Debug, PartialEq)]
+pub struct Location {
     line: u64,
     column: u64,
 }
@@ -9,6 +10,7 @@ struct Location {
 /// starts at line 40 in a file named Foo.graphql, it might be useful for name to
 /// be "Foo.graphql" and location to be `{ line: 40, column: 1 }`.
 /// line and column in locationOffset are 1-indexed
+#[derive(Debug, PartialEq)]
 pub struct Source {
     body: String,
     name: String,
@@ -16,7 +18,7 @@ pub struct Source {
 }
 
 impl Source {
-    fn new(body: String, name: Option<String>, locationOffset: Option<Location>) -> Source {
+    pub fn new(body: String, name: Option<String>, locationOffset: Option<Location>) -> Source {
         Source {
             body: body,
             name: (match name {

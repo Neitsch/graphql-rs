@@ -1,6 +1,9 @@
 #[macro_use]
 extern crate neon;
 
+#[macro_use]
+extern crate nom;
+
 mod language;
 
 use neon::prelude::*;
