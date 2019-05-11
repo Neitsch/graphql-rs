@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Location {
     line: u64,
     column: u64,
@@ -10,22 +10,23 @@ pub struct Location {
 /// starts at line 40 in a file named Foo.graphql, it might be useful for name to
 /// be "Foo.graphql" and location to be `{ line: 40, column: 1 }`.
 /// line and column in locationOffset are 1-indexed
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Source {
-    body: String,
+    pub body: String,
     name: String,
-    locationOffset: Location,
+    #[serde(rename="locationOffset")]
+    location_offset: Location,
 }
 
 impl Source {
-    pub fn new(body: String, name: Option<String>, locationOffset: Option<Location>) -> Source {
+    pub fn new(body: String, name: Option<String>, location_offset: Option<Location>) -> Source {
         Source {
             body: body,
             name: (match name {
                 Some(v) => v,
                 None => "GraphQL Request".to_string(),
             }),
-            locationOffset: (match locationOffset {
+            location_offset: (match location_offset {
                 Some(v) => {
                     assert!(v.line > 0);
                     assert!(v.column > 0);

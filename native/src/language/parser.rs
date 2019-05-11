@@ -10,12 +10,30 @@ fn whitespace(c: u8) -> bool {
 }
 
 named!(whitespace0<CompleteByteSlice, CompleteByteSlice>,
-    take_while!(whitespace)
+    recognize!(
+        many0!(
+            alt!(
+                do_parse!(
+                    tag!("#")
+                    >> take_until!("\n")
+                    >> (())
+                ) => {|_| ()} |
+                take_while!(whitespace) => {|_| ()}
+            )
+        )
+    )
 );
 
-named!(whitespace1<CompleteByteSlice, CompleteByteSlice>,
-    take_while1!(whitespace)
-);
+#[test]
+fn test_whitespace() {
+    assert_eq!(
+        whitespace0(CompleteByteSlice(b" # test\n")),
+        Ok((
+            CompleteByteSlice(b""),
+            CompleteByteSlice(b" # test\n")
+        ))
+    );
+}
 
 fn is_alphanumeric_or_underscore(c: u8) -> bool {
     nom::is_alphanumeric(c) || (c == ('_' as u8))
@@ -187,7 +205,7 @@ named!(schema_definition<CompleteByteSlice, SchemaDefinition>,
             call!(punct,  "}")
         )
         >> (SchemaDefinition {
-            loc: None, directives: directives, operationTypes: operation_types
+            loc: None, directives: directives, operation_types: operation_types
         })
     )
 );
@@ -208,14 +226,10 @@ fn test_schema_definition() {
                     },
                     arguments: None
                 }]),
-                operationTypes: vec![]
+                operation_types: vec![]
             }
         ))
     );
-}
-
-fn alpha_underscore(c: u8) -> bool {
-    return false;
 }
 
 named!(
@@ -225,7 +239,7 @@ named!(
         separated_list!(
             call!(punct,  "|"),
             switch!(
-                peek!(take_while1!(alpha_underscore)),
+                peek!(take_while1!(is_alphanumeric_or_underscore)),
                 CompleteByteSlice(b"QUERY")
                 | CompleteByteSlice(b"MUTATION")
                 | CompleteByteSlice(b"SUBSCRIPTION")
@@ -304,7 +318,7 @@ named!(
                 description: None,
                 name: name,
                 _type: _type,
-                defaultValue: default_value,
+                default_value: default_value,
                 directives: directives,
             }
         )
@@ -578,7 +592,7 @@ fn test_type_system_definition() {
             TypeSystemDefinition::SchemaDefinition(SchemaDefinition {
                 loc: None,
                 directives: None,
-                operationTypes: vec![]
+                operation_types: vec![]
             })
         ))
     );
@@ -608,7 +622,7 @@ fn test_definition() {
                 SchemaDefinition {
                     loc: None,
                     directives: None,
-                    operationTypes: vec![]
+                    operation_types: vec![]
                 }
             ))
         ))
@@ -617,7 +631,8 @@ fn test_definition() {
 
 named!(document<CompleteByteSlice, Document>,
     do_parse!(
-        definitions: many1!(definition)
+        whitespace0
+        >> definitions: many1!(definition)
         >> (Document {
             loc: None,
             definitions: definitions,
@@ -637,7 +652,7 @@ fn test_document_1() {
                     TypeSystemDefinition::SchemaDefinition(SchemaDefinition {
                         loc: None,
                         directives: None,
-                        operationTypes: vec![]
+                        operation_types: vec![]
                     })
                 )],
             }
@@ -659,7 +674,7 @@ fn test_document_2() {
                     TypeSystemDefinition::SchemaDefinition(SchemaDefinition {
                         loc: None,
                         directives: None,
-                        operationTypes: vec![]
+                        operation_types: vec![]
                     })
                 )],
             }
@@ -704,11 +719,10 @@ fn test_document_3() {
     )));
 }
 
-fn parse(source: Source) -> Document {
-    Document {
-        loc: None,
-        definitions: vec![],
-    }
+pub fn parse(source: Source) -> Document {
+    let parse_result = document(CompleteByteSlice(source.body.as_bytes())).unwrap();
+    assert_eq!(parse_result.0.len(), 0);
+    parse_result.1
 }
 
 impl From<String> for Document {

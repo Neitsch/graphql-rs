@@ -1,15 +1,18 @@
 #[macro_use]
 extern crate neon;
-
 #[macro_use]
 extern crate nom;
+#[macro_use]
+extern crate neon_serde;
+#[macro_use]
+extern crate serde_derive;
 
 mod language;
 
 use neon::prelude::*;
 
-fn hello(mut cx: FunctionContext) -> JsResult<JsString> {
-    Ok(cx.string("hello node"))
+export! {
+    fn parse(source: String) -> language::ast::Document {
+        source.into()
+    }
 }
-
-register_module!(mut cx, { cx.export_function("hello", hello) });

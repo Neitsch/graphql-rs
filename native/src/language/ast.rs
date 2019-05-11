@@ -1,6 +1,6 @@
 use super::source::Source;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Location {
     /// The character offset at which this Node begins.
     pub start: u64,
@@ -15,7 +15,7 @@ pub struct Location {
 /**
  * The list of all possible AST node types.
  */
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum AST {
     Name(Name),
     Document(Document),
@@ -63,88 +63,108 @@ pub enum AST {
 }
 
 // Name
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Name {
     pub loc: Option<Location>,
     pub value: String,
 }
 
 // Document
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Document {
     pub loc: Option<Location>,
     pub definitions: Vec<Definition>,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum Definition {
     ExecutableDefinition(ExecutableDefinition),
     TypeSystemDefinition(TypeSystemDefinition),
     TypeSystemExtension(TypeSystemExtension),
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum ExecutableDefinition {
     OperationDefinition(OperationDefinition),
     FragmentDefinition(FragmentDefinition),
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct OperationDefinition {
     pub loc: Option<Location>,
     pub operation: OperationType,
     pub name: Option<Name>,
-    pub variableDefinitions: Option<Vec<VariableDefinition>>,
+    #[serde(rename="variableDefinitions")]
+    pub variable_definitions: Option<Vec<VariableDefinition>>,
     pub directives: Option<Vec<Directive>>,
-    pub selectionSet: SelectionSet,
+    #[serde(rename="selectionSet")]
+    pub selection_set: SelectionSet,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum OperationType {
+    #[serde(rename="query")]
     QUERY,
+    #[serde(rename="mutation")]
     MUTATION,
+    #[serde(rename="subscription")]
     SUBSCRIPTION,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct VariableDefinition {
     pub loc: Option<Location>,
     pub variable: Variable,
+    #[serde(rename="type")]
     pub _type: Type,
-    pub defaultValue: Option<Value>,
+    #[serde(rename="defaultValue")]
+    pub default_value: Option<Value>,
     pub directives: Option<Vec<Directive>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Variable {
     pub loc: Option<Location>,
     pub name: Name,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct SelectionSet {
     pub loc: Option<Location>,
     pub selections: Vec<Selection>,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum Selection {
     Field(Field),
     FragmentSpread(FragmentSpread),
     InlineFragment(InlineFragment),
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Field {
     pub loc: Option<Location>,
     pub alias: Option<Name>,
     pub name: Name,
     pub arguments: Option<Vec<Argument>>,
     pub directives: Option<Vec<Directive>>,
-    pub selectionSet: Option<SelectionSet>,
+    #[serde(rename="selectionSet")]
+    pub selection_set: Option<SelectionSet>,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Argument {
     pub loc: Option<Location>,
     pub name: Name,
@@ -152,35 +172,44 @@ pub struct Argument {
 }
 
 // Fragments
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct FragmentSpread {
     pub loc: Option<Location>,
     pub name: Name,
     pub directives: Option<Vec<Directive>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct InlineFragment {
     pub loc: Option<Location>,
-    pub typeCondition: Option<NamedType>,
+    #[serde(rename="typeCondition")]
+    pub type_condition: Option<NamedType>,
     pub directives: Option<Vec<Directive>>,
-    pub selectionSet: SelectionSet,
+    #[serde(rename="selectionSet")]
+    pub selection_set: SelectionSet,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct FragmentDefinition {
     pub loc: Option<Location>,
     pub name: Name,
     // Note: fragment variable definitions are experimental and may be changed
     // or removed in the future.
-    pub variableDefinitions: Option<Vec<VariableDefinition>>,
-    pub typeCondition: NamedType,
+    #[serde(rename="variableDefinitions")]
+    pub variable_definitions: Option<Vec<VariableDefinition>>,
+    #[serde(rename="typeCondition")]
+    pub type_condition: NamedType,
     pub directives: Option<Vec<Directive>>,
-    pub selectionSet: SelectionSet,
+    #[serde(rename="selectionSet")]
+    pub selection_set: SelectionSet,
 }
 
 // Values
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum Value {
     Variable(Variable),
     IntValue(IntValue),
@@ -193,55 +222,64 @@ pub enum Value {
     ObjectValue(ObjectValue),
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct IntValue {
     pub loc: Option<Location>,
     pub value: String,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct FloatValue {
     pub loc: Option<Location>,
     pub value: String,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct StringValue {
     pub loc: Option<Location>,
     pub value: String,
     pub block: Option<bool>,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct BooleanValue {
     pub loc: Option<Location>,
     pub value: bool,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct NullValue {
     pub loc: Option<Location>,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct EnumValue {
     pub loc: Option<Location>,
     pub value: String,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct ListValue {
     pub loc: Option<Location>,
     pub values: Vec<Value>,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct ObjectValue {
     pub loc: Option<Location>,
     pub fields: Vec<ObjectField>,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct ObjectField {
     pub loc: Option<Location>,
     pub name: Name,
@@ -249,7 +287,8 @@ pub struct ObjectField {
 }
 
 // Directives
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Directive {
     pub loc: Option<Location>,
     pub name: Name,
@@ -257,61 +296,74 @@ pub struct Directive {
 }
 
 // Type Reference
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum Type {
     NamedType(NamedType),
     ListType(ListType),
     NonNullType(NonNullType),
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct NamedType {
     pub loc: Option<Location>,
     pub name: Name,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct ListType {
     pub loc: Option<Location>,
+    #[serde(rename="type")]
     pub _type: Box<Type>,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum NonNullInnerType {
     NamedType(NamedType),
     ListType(ListType),
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct NonNullType {
     pub loc: Option<Location>,
+    #[serde(rename="type")]
     pub _type: NonNullInnerType,
 }
 
 // Type System Definition
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum TypeSystemDefinition {
     SchemaDefinition(SchemaDefinition),
     TypeDefinition(TypeDefinition),
     DirectiveDefinition(DirectiveDefinition),
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct SchemaDefinition {
     pub loc: Option<Location>,
     pub directives: Option<Vec<Directive>>,
-    pub operationTypes: Vec<OperationTypeDefinition>,
+    #[serde(rename="operationTypes")]
+    pub operation_types: Vec<OperationTypeDefinition>,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct OperationTypeDefinition {
     pub loc: Option<Location>,
     pub operation: OperationType,
+    #[serde(rename="type")]
     pub _type: NamedType,
 }
 
 // Type Definition
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum TypeDefinition {
     ScalarTypeDefinition(ScalarTypeDefinition),
     ObjectTypeDefinition(ObjectTypeDefinition),
@@ -321,7 +373,8 @@ pub enum TypeDefinition {
     InputObjectTypeDefinition(InputObjectTypeDefinition),
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct ScalarTypeDefinition {
     pub loc: Option<Location>,
     pub description: Option<StringValue>,
@@ -329,7 +382,8 @@ pub struct ScalarTypeDefinition {
     pub directives: Option<Vec<Directive>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct ObjectTypeDefinition {
     pub loc: Option<Location>,
     pub description: Option<StringValue>,
@@ -339,27 +393,33 @@ pub struct ObjectTypeDefinition {
     pub fields: Option<Vec<FieldDefinition>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct FieldDefinition {
     pub loc: Option<Location>,
     pub description: Option<StringValue>,
     pub name: Name,
     pub arguments: Option<Vec<InputValueDefinition>>,
+    #[serde(rename="type")]
     pub _type: Type,
     pub directives: Option<Vec<Directive>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct InputValueDefinition {
     pub loc: Option<Location>,
     pub description: Option<StringValue>,
     pub name: Name,
+    #[serde(rename="type")]
     pub _type: Type,
-    pub defaultValue: Option<Value>,
+    #[serde(rename="defaultValue")]
+    pub default_value: Option<Value>,
     pub directives: Option<Vec<Directive>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct InterfaceTypeDefinition {
     pub loc: Option<Location>,
     pub description: Option<StringValue>,
@@ -368,7 +428,8 @@ pub struct InterfaceTypeDefinition {
     pub fields: Option<Vec<FieldDefinition>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct UnionTypeDefinition {
     pub loc: Option<Location>,
     pub description: Option<StringValue>,
@@ -377,7 +438,8 @@ pub struct UnionTypeDefinition {
     pub types: Option<Vec<NamedType>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct EnumTypeDefinition {
     pub loc: Option<Location>,
     pub description: Option<StringValue>,
@@ -386,7 +448,8 @@ pub struct EnumTypeDefinition {
     pub values: Option<Vec<EnumValueDefinition>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct EnumValueDefinition {
     pub loc: Option<Location>,
     pub description: Option<StringValue>,
@@ -394,7 +457,8 @@ pub struct EnumValueDefinition {
     pub directives: Option<Vec<Directive>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct InputObjectTypeDefinition {
     pub loc: Option<Location>,
     pub description: Option<StringValue>,
@@ -404,7 +468,8 @@ pub struct InputObjectTypeDefinition {
 }
 
 // Directive Definitions
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct DirectiveDefinition {
     pub loc: Option<Location>,
     pub description: Option<StringValue>,
@@ -414,21 +479,25 @@ pub struct DirectiveDefinition {
 }
 
 // Type System Extensions
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum TypeSystemExtension {
     SchemaExtension(SchemaExtension),
     TypeExtension(TypeExtension),
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct SchemaExtension {
     pub loc: Option<Location>,
     pub directives: Option<Vec<Directive>>,
-    pub operationTypes: Option<Vec<OperationTypeDefinition>>,
+    #[serde(rename="operationTypes")]
+    pub operation_types: Option<Vec<OperationTypeDefinition>>,
 }
 
 // Type Extensions
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum TypeExtension {
     ScalarTypeExtension(ScalarTypeExtension),
     ObjectTypeExtension(ObjectTypeExtension),
@@ -438,14 +507,16 @@ pub enum TypeExtension {
     InputObjectTypeExtension(InputObjectTypeExtension),
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct ScalarTypeExtension {
     pub loc: Option<Location>,
     pub name: Name,
     pub directives: Option<Vec<Directive>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct ObjectTypeExtension {
     pub loc: Option<Location>,
     pub name: Name,
@@ -454,7 +525,8 @@ pub struct ObjectTypeExtension {
     pub fields: Option<Vec<FieldDefinition>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct InterfaceTypeExtension {
     pub loc: Option<Location>,
     pub name: Name,
@@ -462,7 +534,8 @@ pub struct InterfaceTypeExtension {
     pub fields: Option<Vec<FieldDefinition>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct UnionTypeExtension {
     pub loc: Option<Location>,
     pub name: Name,
@@ -470,7 +543,8 @@ pub struct UnionTypeExtension {
     pub types: Option<Vec<NamedType>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct EnumTypeExtension {
     pub loc: Option<Location>,
     pub name: Name,
@@ -478,7 +552,8 @@ pub struct EnumTypeExtension {
     pub values: Option<Vec<EnumValueDefinition>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[serde(tag="kind")]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct InputObjectTypeExtension {
     pub loc: Option<Location>,
     pub name: Name,
