@@ -500,29 +500,6 @@ named!(
     )
 );
 
-#[test]
-fn test_object_definition() {
-    assert_eq!(
-        object_definition(CompleteByteSlice(b"type Author {
-            id: Int!
-            firstName: String
-            lastName: String
-            posts: [Post]
-        }
-        ")), Ok((
-            CompleteByteSlice(b""),
-            ObjectTypeDefinition {
-                loc: None,
-                description: None,
-                name: Name {value:"Author".to_string(), loc: None},
-                interfaces: None,
-                directives: None,
-                fields: None
-            }
-        ))
-    );
-}
-
 named!(
     type_definition<CompleteByteSlice, TypeDefinition>,
     switch!(
@@ -658,65 +635,6 @@ fn test_document_1() {
             }
         ))
     );
-}
-
-/*#[test]
-fn test_document_2() {
-    assert_eq!(
-        document(CompleteByteSlice(
-            b"type Test {  \n test_value: String \n   }"
-        )),
-        Ok((
-            CompleteByteSlice(b""),
-            Document {
-                loc: None,
-                definitions: vec![Definition::TypeSystemDefinition(
-                    TypeSystemDefinition::SchemaDefinition(SchemaDefinition {
-                        loc: None,
-                        directives: None,
-                        operation_types: vec![]
-                    })
-                )],
-            }
-        ))
-    );
-}*/
-
-#[test]
-fn test_document_3() {
-    assert_eq!(document(CompleteByteSlice(
-        b"type Author {
-    id: Int!
-    firstName: String
-    lastName: String
-    posts: [Post]
-  }
-
-  type Post {
-    id: Int!
-    title: String
-    author: Author
-    votes: Int
-  }
-
-  type Query {
-    posts: [Post]
-    author(id: Int!): Author
-  }
-
-  type Mutation {
-    upvotePost (
-      postId: Int!
-    ): Post
-  }
-"
-    )), Ok((
-        CompleteByteSlice(b""),
-        Document {
-            loc: None,
-            definitions: vec![]
-        }
-    )));
 }
 
 pub fn parse(source: Source) -> Document {
