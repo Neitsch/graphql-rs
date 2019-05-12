@@ -13,6 +13,8 @@ matrix:
         - "yarn -v"
         - yarn
       language: node_js
+      node_js:
+        - 10
     - language: rust
       script:
         - "cargo build --verbose --all"
@@ -23,7 +25,3 @@ matrix:
 rust:
   - stable
   - nightly
-node_js:
-  - 10
-  - 9
-  - 8
