@@ -16,8 +16,11 @@ matrix:
       node_js:
         - 10
     - language: rust
+      before_script:
+        - rustup component add clippy
       script:
         - "cargo build --verbose --all"
+        - "cargo clippy -- -D warnings"
         - "cargo test --verbose --all"
 #os:
 #  - osx

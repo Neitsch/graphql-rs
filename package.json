@@ -14,7 +14,8 @@
     "install": "node-pre-gyp install --fallback-to-build=false || neon build --release",
     "package": "node-pre-gyp package",
     "upload-binary": "node-pre-gyp package && node-pre-gyp-github publish",
-    "build": "neon build"
+    "build": "neon build",
+    "test": "echo TODO"
   },
   "repository": {
     "type": "git",
