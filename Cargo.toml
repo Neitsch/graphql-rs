@@ -3,3 +3,6 @@
 members = [
     "graphql_rs_native",
 ]
+exclude = [
+    "native",
+]
