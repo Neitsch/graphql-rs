@@ -13,18 +13,18 @@ matrix:
         - "yarn -v"
         - yarn
       language: node_js
-      node_js:
-        - node
-        - 10
-        - 9
-        - 8
     - language: rust
-      rust:
-        - stable
-        - nightly
       script:
         - "cargo build --verbose --all"
         - "cargo test --verbose --all"
 #os:
 #  - osx
 #  - linux
+rust:
+  - stable
+  - nightly
+node_js:
+  - node
+  - 10
+  - 9
+  - 8
