@@ -32,10 +32,10 @@ matrix:
       before_deploy:
         - cd graphql_rs_native
       deploy:
+        provider: cargo
+        on:
+          tags: true
         token:
-          provider: cargo
-          on:
-            tags: true
           secure: NUGYA8+cpFEE/MsO8c+ZXDWEaKKjrulMO0gPn+b7vY4eg/RWXYHzlltl9rKYoZqqyLUe+PrEi/xVXU0LNtVRbRzq8BAhtbwTRN1n0tGLZPdGr+u+Jd+OwurtDaAj4Xn3K7iZkSZi/xf0ApJUFRAZzfAB9TDKNYt7SsWnkO/Riko1rEdyRb12c8K/guTTcRqsyVj9sfonB0mNFr2tVyfCTe5DvBnNMjLlY6slECxL3xkOfNGHzwm58Bbm7FDW9rnNUAUsdo8dXqt+YP9iSbSLTywI0HvAViSNa0UoiW4Li0seSIaVW7hCV0trYbuarL7O57XNAeeWtGJaaGsTibK81LJXZrw8Viz/WszUq4GhF+ywpYhrNSo1XSOYXL4uj8Og+XgStmJhKIdnt8j/hqdVOxCaIKAj3oLMZBwsJWHUlzVJ8rzbc9GuvOF9YJaKOvmzpoMlEXSdqrOw7yAdEARELQsQLoxXDraVjIEoy8CVIdUMVuKMgkXDtVDqGIL6J5oZb6oAQOv4heZ3ibY8uST5YxXKs//a+pYrMAYSPFMD2PC+Xf1BSUMrmA4v9WpcFXjgD7y0tu4UkuKa07540cabdAOf6FMXkn7+1szp2wamnt/SBwvZOHgfh3k1snxLL3eeOcOs9L95l+9UgAspxwcwzzC8QslpDQXbqbmnW2OzTx0=
 rust:
   - stable
