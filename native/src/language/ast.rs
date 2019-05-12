@@ -17,49 +17,49 @@ pub struct Location {
  */
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum AST {
-    Name(Name),
-    Document(Document),
-    OperationDefinition(OperationDefinition),
-    VariableDefinition(VariableDefinition),
-    Variable(Variable),
-    SelectionSet(SelectionSet),
-    Field(Field),
-    Argument(Argument),
-    FragmentSpread(FragmentSpread),
-    InlineFragment(InlineFragment),
-    FragmentDefinition(FragmentDefinition),
-    IntValue(IntValue),
-    FloatValue(FloatValue),
-    StringValue(StringValue),
-    BooleanValue(BooleanValue),
-    NullValue(NullValue),
-    EnumValue(EnumValue),
-    ListValue(ListValue),
-    ObjectValue(ObjectValue),
-    ObjectField(ObjectField),
-    Directive(Directive),
-    NamedType(NamedType),
-    ListType(ListType),
-    NonNullType(NonNullType),
-    SchemaDefinition(SchemaDefinition),
-    OperationTypeDefinition(OperationTypeDefinition),
-    ScalarTypeDefinition(ScalarTypeDefinition),
-    ObjectTypeDefinition(ObjectTypeDefinition),
-    FieldDefinition(FieldDefinition),
-    InputValueDefinition(InputValueDefinition),
-    InterfaceTypeDefinition(InterfaceTypeDefinition),
-    UnionTypeDefinition(UnionTypeDefinition),
-    EnumTypeDefinition(EnumTypeDefinition),
-    EnumValueDefinition(EnumValueDefinition),
-    InputObjectTypeDefinition(InputObjectTypeDefinition),
-    DirectiveDefinition(DirectiveDefinition),
-    SchemaExtension(SchemaExtension),
-    ScalarTypeExtension(ScalarTypeExtension),
-    ObjectTypeExtension(ObjectTypeExtension),
-    InterfaceTypeExtension(InterfaceTypeExtension),
-    UnionTypeExtension(UnionTypeExtension),
-    EnumTypeExtension(EnumTypeExtension),
-    InputObjectTypeExtension(InputObjectTypeExtension),
+    Name(Box<Name>),
+    Document(Box<Document>),
+    OperationDefinition(Box<OperationDefinition>),
+    VariableDefinition(Box<VariableDefinition>),
+    Variable(Box<Variable>),
+    SelectionSet(Box<SelectionSet>),
+    Field(Box<Field>),
+    Argument(Box<Argument>),
+    FragmentSpread(Box<FragmentSpread>),
+    InlineFragment(Box<InlineFragment>),
+    FragmentDefinition(Box<FragmentDefinition>),
+    IntValue(Box<IntValue>),
+    FloatValue(Box<FloatValue>),
+    StringValue(Box<StringValue>),
+    BooleanValue(Box<BooleanValue>),
+    NullValue(Box<NullValue>),
+    EnumValue(Box<EnumValue>),
+    ListValue(Box<ListValue>),
+    ObjectValue(Box<ObjectValue>),
+    ObjectField(Box<ObjectField>),
+    Directive(Box<Directive>),
+    NamedType(Box<NamedType>),
+    ListType(Box<ListType>),
+    NonNullType(Box<NonNullType>),
+    SchemaDefinition(Box<SchemaDefinition>),
+    OperationTypeDefinition(Box<OperationTypeDefinition>),
+    ScalarTypeDefinition(Box<ScalarTypeDefinition>),
+    ObjectTypeDefinition(Box<ObjectTypeDefinition>),
+    FieldDefinition(Box<FieldDefinition>),
+    InputValueDefinition(Box<InputValueDefinition>),
+    InterfaceTypeDefinition(Box<InterfaceTypeDefinition>),
+    UnionTypeDefinition(Box<UnionTypeDefinition>),
+    EnumTypeDefinition(Box<EnumTypeDefinition>),
+    EnumValueDefinition(Box<EnumValueDefinition>),
+    InputObjectTypeDefinition(Box<InputObjectTypeDefinition>),
+    DirectiveDefinition(Box<DirectiveDefinition>),
+    SchemaExtension(Box<SchemaExtension>),
+    ScalarTypeExtension(Box<ScalarTypeExtension>),
+    ObjectTypeExtension(Box<ObjectTypeExtension>),
+    InterfaceTypeExtension(Box<InterfaceTypeExtension>),
+    UnionTypeExtension(Box<UnionTypeExtension>),
+    EnumTypeExtension(Box<EnumTypeExtension>),
+    InputObjectTypeExtension(Box<InputObjectTypeExtension>),
 }
 
 // Name
@@ -81,16 +81,16 @@ pub struct Document {
 #[serde(tag="kind")]
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum Definition {
-    ExecutableDefinition(ExecutableDefinition),
-    TypeSystemDefinition(TypeSystemDefinition),
-    TypeSystemExtension(TypeSystemExtension),
+    ExecutableDefinition(Box<ExecutableDefinition>),
+    TypeSystemDefinition(Box<TypeSystemDefinition>),
+    TypeSystemExtension(Box<TypeSystemExtension>),
 }
 
 #[serde(tag="kind")]
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum ExecutableDefinition {
-    OperationDefinition(OperationDefinition),
-    FragmentDefinition(FragmentDefinition),
+    OperationDefinition(Box<OperationDefinition>),
+    FragmentDefinition(Box<FragmentDefinition>),
 }
 
 #[serde(tag="kind")]
@@ -145,9 +145,9 @@ pub struct SelectionSet {
 #[serde(tag="kind")]
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum Selection {
-    Field(Field),
-    FragmentSpread(FragmentSpread),
-    InlineFragment(InlineFragment),
+    Field(Box<Field>),
+    FragmentSpread(Box<FragmentSpread>),
+    InlineFragment(Box<InlineFragment>),
 }
 
 #[serde(tag="kind")]
@@ -210,15 +210,15 @@ pub struct FragmentDefinition {
 #[serde(tag="kind")]
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum Value {
-    Variable(Variable),
-    IntValue(IntValue),
-    FloatValue(FloatValue),
-    StringValue(StringValue),
-    BooleanValue(BooleanValue),
-    NullValue(NullValue),
-    EnumValue(EnumValue),
-    ListValue(ListValue),
-    ObjectValue(ObjectValue),
+    Variable(Box<Variable>),
+    IntValue(Box<IntValue>),
+    FloatValue(Box<FloatValue>),
+    StringValue(Box<StringValue>),
+    BooleanValue(Box<BooleanValue>),
+    NullValue(Box<NullValue>),
+    EnumValue(Box<EnumValue>),
+    ListValue(Box<ListValue>),
+    ObjectValue(Box<ObjectValue>),
 }
 
 #[serde(tag="kind")]
@@ -298,9 +298,9 @@ pub struct Directive {
 #[serde(tag="kind")]
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum Type {
-    NamedType(NamedType),
-    ListType(ListType),
-    NonNullType(NonNullType),
+    NamedType(Box<NamedType>),
+    ListType(Box<ListType>),
+    NonNullType(Box<NonNullType>),
 }
 
 #[serde(tag="kind")]
@@ -321,8 +321,8 @@ pub struct ListType {
 #[serde(tag="kind")]
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum NonNullInnerType {
-    NamedType(NamedType),
-    ListType(ListType),
+    NamedType(Box<NamedType>),
+    ListType(Box<ListType>),
 }
 
 #[serde(tag="kind")]
@@ -337,9 +337,9 @@ pub struct NonNullType {
 #[serde(tag="kind")]
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum TypeSystemDefinition {
-    SchemaDefinition(SchemaDefinition),
-    TypeDefinition(TypeDefinition),
-    DirectiveDefinition(DirectiveDefinition),
+    SchemaDefinition(Box<SchemaDefinition>),
+    TypeDefinition(Box<TypeDefinition>),
+    DirectiveDefinition(Box<DirectiveDefinition>),
 }
 
 #[serde(tag="kind")]
@@ -364,12 +364,12 @@ pub struct OperationTypeDefinition {
 #[serde(tag="kind")]
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum TypeDefinition {
-    ScalarTypeDefinition(ScalarTypeDefinition),
-    ObjectTypeDefinition(ObjectTypeDefinition),
-    InterfaceTypeDefinition(InterfaceTypeDefinition),
-    UnionTypeDefinition(UnionTypeDefinition),
-    EnumTypeDefinition(EnumTypeDefinition),
-    InputObjectTypeDefinition(InputObjectTypeDefinition),
+    ScalarTypeDefinition(Box<ScalarTypeDefinition>),
+    ObjectTypeDefinition(Box<ObjectTypeDefinition>),
+    InterfaceTypeDefinition(Box<InterfaceTypeDefinition>),
+    UnionTypeDefinition(Box<UnionTypeDefinition>),
+    EnumTypeDefinition(Box<EnumTypeDefinition>),
+    InputObjectTypeDefinition(Box<InputObjectTypeDefinition>),
 }
 
 #[serde(tag="kind")]
@@ -481,8 +481,8 @@ pub struct DirectiveDefinition {
 #[serde(tag="kind")]
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum TypeSystemExtension {
-    SchemaExtension(SchemaExtension),
-    TypeExtension(TypeExtension),
+    SchemaExtension(Box<SchemaExtension>),
+    TypeExtension(Box<TypeExtension>),
 }
 
 #[serde(tag="kind")]
@@ -498,12 +498,12 @@ pub struct SchemaExtension {
 #[serde(tag="kind")]
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum TypeExtension {
-    ScalarTypeExtension(ScalarTypeExtension),
-    ObjectTypeExtension(ObjectTypeExtension),
-    InterfaceTypeExtension(InterfaceTypeExtension),
-    UnionTypeExtension(UnionTypeExtension),
-    EnumTypeExtension(EnumTypeExtension),
-    InputObjectTypeExtension(InputObjectTypeExtension),
+    ScalarTypeExtension(Box<ScalarTypeExtension>),
+    ObjectTypeExtension(Box<ObjectTypeExtension>),
+    InterfaceTypeExtension(Box<InterfaceTypeExtension>),
+    UnionTypeExtension(Box<UnionTypeExtension>),
+    EnumTypeExtension(Box<EnumTypeExtension>),
+    InputObjectTypeExtension(Box<InputObjectTypeExtension>),
 }
 
 #[serde(tag="kind")]

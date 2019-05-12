@@ -9,7 +9,6 @@ extern crate serde_derive;
 
 mod language;
 
-use neon::prelude::*;
 use std::fs;
 
 export! {

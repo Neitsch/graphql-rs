@@ -6,7 +6,7 @@ use super::ast::*;
 use super::source::Source;
 
 fn whitespace(c: u8) -> bool {
-    (c == (' ' as u8)) || (c == ('\t' as u8)) || (c == ('\n' as u8)) || (c == (',' as u8))
+    (c == b' ') || (c == b'\t') || (c == b'\n') || (c == b',')
 }
 
 named!(whitespace0<CompleteByteSlice, CompleteByteSlice>,
@@ -36,7 +36,7 @@ fn test_whitespace() {
 }
 
 fn is_alphanumeric_or_underscore(c: u8) -> bool {
-    nom::is_alphanumeric(c) || (c == ('_' as u8))
+    nom::is_alphanumeric(c) || (c == b'_')
 }
 
 named_args!(
@@ -79,7 +79,7 @@ named!(integer_part<CompleteByteSlice, ()>,
 
 named!(
     fractional_part<CompleteByteSlice, ()>,
-    map!(preceded!(tag!("."), take_while!(nom::is_digit)), |_| (()))
+    map!(preceded!(tag!("."), take_while!(nom::is_digit)), |_| ())
 );
 
 named!(
@@ -121,14 +121,14 @@ named!(int_value<CompleteByteSlice, IntValue>,
 
 named!(value<CompleteByteSlice, Value>,
     alt!(
-        variable => {Value::Variable} |
-        float_value => {Value::FloatValue} |
-        int_value => {Value::IntValue}
-        // string_value => {Value::BooleanValue} |
-        // null_value => {Value::NullValue} |
-        // enum_value => {Value::EnumValue} |
-        // list_value => {Value::ListValue} |
-        // object_value => {Value::ObjectValue}
+        variable => {|v| Value::Variable(Box::new(v))} |
+        float_value => {|v| Value::FloatValue(Box::new(v))} |
+        int_value => {|v| Value::IntValue(Box::new(v))}
+        // string_value => {|v| Value::BooleanValue(Box::new(v))} |
+        // null_value => {|v| Value::NullValue(Box::new(v))} |
+        // enum_value => {|v| Value::EnumValue(Box::new(v))} |
+        // list_value => {|v| Value::ListValue(Box::new(v))} |
+        // object_value => {|v| Value::ObjectValue(Box::new(v))}
     )
 );
 
@@ -284,8 +284,8 @@ named!(
     non_null_type<CompleteByteSlice, NonNullType>, map!(
             terminated!(
                 alt!(
-                    list_type => {NonNullInnerType::ListType} |
-                    named_type => {NonNullInnerType::NamedType}
+                    list_type => {|v| NonNullInnerType::ListType(Box::new(v))} |
+                    named_type => {|v| NonNullInnerType::NamedType(Box::new(v))}
                 ),
                 tag!("!")
             ),
@@ -298,9 +298,9 @@ named!(
 
 named!(_type<CompleteByteSlice, Type>,
     alt!(
-        non_null_type => {Type::NonNullType} |
-        list_type => {Type::ListType} |
-        named_type => {Type::NamedType}
+        non_null_type => {|v| Type::NonNullType(Box::new(v))} |
+        list_type => {|v| Type::ListType(Box::new(v))} |
+        named_type => {|v| Type::NamedType(Box::new(v))}
     )
 );
 
@@ -527,13 +527,13 @@ named!(
     type_definition<CompleteByteSlice, TypeDefinition>,
     switch!(
         peek!(take_while1!(nom::is_alphanumeric)),
-        CompleteByteSlice(b"type") => map!(object_definition, TypeDefinition::ObjectTypeDefinition)
-        | CompleteByteSlice(b"interface") => map!(interface_definition, TypeDefinition::InterfaceTypeDefinition)
-        | CompleteByteSlice(b"scalar") => map!(scalar_definition, TypeDefinition::ScalarTypeDefinition)
-        | CompleteByteSlice(b"union") => map!(union_definition, TypeDefinition::UnionTypeDefinition)
-        | CompleteByteSlice(b"enum") => map!(enum_definition, TypeDefinition::EnumTypeDefinition)
-        | CompleteByteSlice(b"input") => map!(input_definition, TypeDefinition::InputObjectTypeDefinition)
-        | _ => map!(input_definition, TypeDefinition::InputObjectTypeDefinition)
+        CompleteByteSlice(b"type") => map!(map!(object_definition, Box::new), TypeDefinition::ObjectTypeDefinition)
+        | CompleteByteSlice(b"interface") => map!(map!(interface_definition, Box::new), TypeDefinition::InterfaceTypeDefinition)
+        | CompleteByteSlice(b"scalar") => map!(map!(scalar_definition, Box::new), TypeDefinition::ScalarTypeDefinition)
+        | CompleteByteSlice(b"union") => map!(map!(union_definition, Box::new), TypeDefinition::UnionTypeDefinition)
+        | CompleteByteSlice(b"enum") => map!(map!(enum_definition, Box::new), TypeDefinition::EnumTypeDefinition)
+        | CompleteByteSlice(b"input") => map!(map!(input_definition, Box::new), TypeDefinition::InputObjectTypeDefinition)
+        | _ => map!(map!(input_definition, Box::new), TypeDefinition::InputObjectTypeDefinition)
     )
 );
 
@@ -571,15 +571,15 @@ named!(
 
 named!(type_system_definition<CompleteByteSlice, TypeSystemDefinition>,
     switch!(peek!(take_while1!(nom::is_alphanumeric)),
-        CompleteByteSlice(b"schema") => map!(schema_definition, TypeSystemDefinition::SchemaDefinition) |
-        CompleteByteSlice(b"directive") => map!(directive_definition, TypeSystemDefinition::DirectiveDefinition) |
+        CompleteByteSlice(b"schema") => map!(map!(schema_definition, Box::new), TypeSystemDefinition::SchemaDefinition) |
+        CompleteByteSlice(b"directive") => map!(map!(directive_definition, Box::new), TypeSystemDefinition::DirectiveDefinition) |
         CompleteByteSlice(b"type")
         | CompleteByteSlice(b"interface")
         | CompleteByteSlice(b"scalar")
         | CompleteByteSlice(b"union")
         | CompleteByteSlice(b"enum")
-        | CompleteByteSlice(b"input") => map!(type_definition, TypeSystemDefinition::TypeDefinition)
-        | _ => map!(schema_definition, TypeSystemDefinition::SchemaDefinition)
+        | CompleteByteSlice(b"input") => map!(map!(type_definition, Box::new), TypeSystemDefinition::TypeDefinition)
+        | _ => map!(map!(schema_definition, Box::new), TypeSystemDefinition::SchemaDefinition)
     )
 );
 
@@ -589,11 +589,11 @@ fn test_type_system_definition() {
         type_system_definition(CompleteByteSlice(b"schema {}")),
         Ok((
             CompleteByteSlice(b""),
-            TypeSystemDefinition::SchemaDefinition(SchemaDefinition {
+            TypeSystemDefinition::SchemaDefinition(Box::new(SchemaDefinition {
                 loc: None,
                 directives: None,
                 operation_types: vec![]
-            })
+            }))
         ))
     );
 }
@@ -607,8 +607,8 @@ named!(definition<CompleteByteSlice, Definition>,
         | CompleteByteSlice(b"union")
         | CompleteByteSlice(b"enum")
         | CompleteByteSlice(b"input")
-        | CompleteByteSlice(b"directive") => map!(type_system_definition, Definition::TypeSystemDefinition) |
-        _ => map!(type_system_definition, Definition::TypeSystemDefinition)
+        | CompleteByteSlice(b"directive") => map!(map!(type_system_definition, Box::new), Definition::TypeSystemDefinition) |
+        _ => map!(map!(type_system_definition, Box::new), Definition::TypeSystemDefinition)
     )
 );
 
@@ -618,13 +618,13 @@ fn test_definition() {
         definition(CompleteByteSlice(b"schema {}")),
         Ok((
             CompleteByteSlice(b""),
-            Definition::TypeSystemDefinition(TypeSystemDefinition::SchemaDefinition(
+            Definition::TypeSystemDefinition(Box::new(TypeSystemDefinition::SchemaDefinition(Box::new(
                 SchemaDefinition {
                     loc: None,
                     directives: None,
                     operation_types: vec![]
-                }
-            ))
+                })
+            )))
         ))
     );
 }
@@ -648,13 +648,13 @@ fn test_document_1() {
             CompleteByteSlice(b""),
             Document {
                 loc: None,
-                definitions: vec![Definition::TypeSystemDefinition(
-                    TypeSystemDefinition::SchemaDefinition(SchemaDefinition {
+                definitions: vec![Definition::TypeSystemDefinition(Box::new(
+                    TypeSystemDefinition::SchemaDefinition(Box::new(SchemaDefinition {
                         loc: None,
                         directives: None,
                         operation_types: vec![]
-                    })
-                )],
+                    }))
+                ))],
             }
         ))
     );
@@ -727,12 +727,12 @@ pub fn parse(source: Source) -> Document {
 
 impl From<String> for Document {
     fn from(string: String) -> Document {
-        return Source::new(string, None, None).into();
+        Source::new(string, None, None).into()
     }
 }
 
 impl From<Source> for Document {
     fn from(source: Source) -> Document {
-        return parse(source);
+        parse(source)
     }
 }

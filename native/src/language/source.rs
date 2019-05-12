@@ -21,7 +21,7 @@ pub struct Source {
 impl Source {
     pub fn new(body: String, name: Option<String>, location_offset: Option<Location>) -> Source {
         Source {
-            body: body,
+            body,
             name: (match name {
                 Some(v) => v,
                 None => "GraphQL Request".to_string(),
