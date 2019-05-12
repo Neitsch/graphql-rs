@@ -1,30 +1,42 @@
----
 cache:
   - cargo
   - yarn
 matrix:
   include:
     - before_install:
-        - "curl https://sh.rustup.rs -sSf > /tmp/rustup.sh"
-        - "sh /tmp/rustup.sh -y"
-        - 'export PATH="$HOME/.cargo/bin:$PATH"'
-        - 'source "$HOME/.cargo/env"'
-        - "node -v"
-        - "yarn -v"
+        - curl https://sh.rustup.rs -sSf > /tmp/rustup.sh
+        - sh /tmp/rustup.sh -y
+        - export PATH="$HOME/.cargo/bin:$PATH"
+        - source "$HOME/.cargo/env"
+        - node -v
+        - yarn -v
         - yarn
       language: node_js
       node_js:
         - 10
+      deploy:
+        provider: npm
+        email: nigel.schusters@googlemail.com
+        api_key:
+          secure: raoe2f2Sf0jaMa/GJRtmNJDdn+gprzAQFpwgXFqH8PvSwFyoWYtgNviU+uzLDMUqrrluuz63cnaXt3r8RfMuQR2UmXmo86DFY1rPfc+dzHAbJT8fufkKUebSvY8brIKjF5j+DpiltEZJySAuj4KRAweaGrm5G45EsvXcg2V5jFE6Y+Jg20U0Npg8cZ7uILtzLEKGcRVD9vX5JasewJSQb9DZFOS+6ShOW4ecn6aiI5WQB5e8KEfEHFIE7fqUnux9qngL9IY22d+Ud90i8y5Z608yIVA7ox/h4FeU19GwABhNuW6N4jakp5kgVOMbY9y8QMXIeSlqrofOs/lhIibuNgW5HmGQVfiijMSTzPxqn4L9hTA0p8jfc7ur0Px+4+a8Gdij+RuEcb2sN9TBAwB1TA4DIefa9tjlbQxNR3Mx9hYhjL9EKNVMZx6a9OaDfzBAPVleH8k8cuE99HMwjzPfDWhd29/kJz8XaJSCr2BDtXXAHNw8BAYgNGaw7FIrOAEw4aPdq/23Po/g0kBZ1L6vXME5dGQsF7CnnPaoksJgLjErRePCKgWanV6/wnhOwHh9kAuIcTlyZ30h7Oc9ZbJ3ePECd6Ev6g/9D3ccxrx3oQXwWu1hKuHixZ20DZcxLafxq140IJbMEFf8/lDqAsjnfdfMKVWq8+qmT1hs/Mm2Td0=
+        on:
+          tags: true
+          repo: Neitsch/graphql-rs
     - language: rust
       before_script:
         - rustup component add clippy
       script:
-        - "cargo build --verbose --all"
-        - "cargo clippy -- -D warnings"
-        - "cargo test --verbose --all"
-#os:
-#  - osx
-#  - linux
+        - cargo build --verbose --all
+        - cargo clippy -- -D warnings
+        - cargo test --verbose --all
+      before_deploy:
+        - cd graphql_rs_native
+      deploy:
+        token:
+          provider: cargo
+          on:
+            tags: true
+          secure: NUGYA8+cpFEE/MsO8c+ZXDWEaKKjrulMO0gPn+b7vY4eg/RWXYHzlltl9rKYoZqqyLUe+PrEi/xVXU0LNtVRbRzq8BAhtbwTRN1n0tGLZPdGr+u+Jd+OwurtDaAj4Xn3K7iZkSZi/xf0ApJUFRAZzfAB9TDKNYt7SsWnkO/Riko1rEdyRb12c8K/guTTcRqsyVj9sfonB0mNFr2tVyfCTe5DvBnNMjLlY6slECxL3xkOfNGHzwm58Bbm7FDW9rnNUAUsdo8dXqt+YP9iSbSLTywI0HvAViSNa0UoiW4Li0seSIaVW7hCV0trYbuarL7O57XNAeeWtGJaaGsTibK81LJXZrw8Viz/WszUq4GhF+ywpYhrNSo1XSOYXL4uj8Og+XgStmJhKIdnt8j/hqdVOxCaIKAj3oLMZBwsJWHUlzVJ8rzbc9GuvOF9YJaKOvmzpoMlEXSdqrOw7yAdEARELQsQLoxXDraVjIEoy8CVIdUMVuKMgkXDtVDqGIL6J5oZb6oAQOv4heZ3ibY8uST5YxXKs//a+pYrMAYSPFMD2PC+Xf1BSUMrmA4v9WpcFXjgD7y0tu4UkuKa07540cabdAOf6FMXkn7+1szp2wamnt/SBwvZOHgfh3k1snxLL3eeOcOs9L95l+9UgAspxwcwzzC8QslpDQXbqbmnW2OzTx0=
 rust:
   - stable
   - nightly
