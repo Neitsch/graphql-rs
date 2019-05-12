@@ -1,4 +1,5 @@
 build
+graphql-rs/target
 native/target
 native/index.node
 native/artifacts.json
