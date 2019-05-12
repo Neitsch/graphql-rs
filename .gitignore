@@ -1,3 +1,4 @@
+
 build
 target
 graphql-rs/target
@@ -7,3 +8,5 @@ native/artifacts.json
 **/*~
 **/node_modules
 **/.DS_Store
+Cargo.lock
+graphql_rs_native/Cargo.lock
