@@ -22,7 +22,9 @@
     "url": "git+https://github.com/Neitsch/graphql-rs.git"
   },
   "files": [
-    "native/index.node",
+    "native/src/*.rs",
+    "native/build.rs",
+    "native/Cargo.*",
     "lib"
   ],
   "binary": {
