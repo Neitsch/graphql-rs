@@ -24,7 +24,6 @@ rust:
   - stable
   - nightly
 node_js:
-  - node
   - 10
   - 9
   - 8
