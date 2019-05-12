@@ -14,7 +14,8 @@
     "install": "node-pre-gyp install --fallback-to-build=false || neon build --release",
     "package": "node-pre-gyp package",
     "upload-binary": "node-pre-gyp package && node-pre-gyp-github publish",
-    "build": "neon build"
+    "build": "neon build",
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -31,5 +32,9 @@
     "package_name": "{node_abi}-{platform}-{arch}.tar.gz",
     "module_path": "./native",
     "pkg_path": "."
+  },
+  "devDependencies": {
+    "graphql": "^14.3.0",
+    "jest": "^24.8.0"
   }
 }

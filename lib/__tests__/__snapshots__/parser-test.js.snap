@@ -1,0 +1,66 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`parses graphql simple 1`] = `
+Object {
+  "definitions": Array [
+    Object {
+      "description": null,
+      "directives": null,
+      "fields": Array [
+        Object {
+          "arguments": null,
+          "description": null,
+          "directives": null,
+          "kind": "FieldDefinition",
+          "loc": null,
+          "name": Object {
+            "kind": "Name",
+            "loc": null,
+            "value": "name",
+          },
+          "type": Object {
+            "kind": "NamedType",
+            "loc": null,
+            "name": Object {
+              "kind": "Name",
+              "loc": null,
+              "value": "String",
+            },
+          },
+        },
+        Object {
+          "arguments": null,
+          "description": null,
+          "directives": null,
+          "kind": "FieldDefinition",
+          "loc": null,
+          "name": Object {
+            "kind": "Name",
+            "loc": null,
+            "value": "id",
+          },
+          "type": Object {
+            "kind": "NamedType",
+            "loc": null,
+            "name": Object {
+              "kind": "Name",
+              "loc": null,
+              "value": "ID",
+            },
+          },
+        },
+      ],
+      "interfaces": null,
+      "kind": "ObjectTypeDefinition",
+      "loc": null,
+      "name": Object {
+        "kind": "Name",
+        "loc": null,
+        "value": "User",
+      },
+    },
+  ],
+  "kind": "Document",
+  "loc": null,
+}
+`;

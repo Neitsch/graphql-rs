@@ -14,17 +14,17 @@ matrix:
         - yarn
       language: node_js
       node_js:
-        - node
         - 10
-        - 9
-        - 8
     - language: rust
-      rust:
-        - stable
-        - nightly
+      before_script:
+        - rustup component add clippy
       script:
         - "cargo build --verbose --all"
+        - "cargo clippy -- -D warnings"
         - "cargo test --verbose --all"
 #os:
 #  - osx
 #  - linux
+rust:
+  - stable
+  - nightly
