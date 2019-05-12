@@ -1,6 +1,6 @@
 [package]
 name = "graphql_rs_native"
-version = "0.0.3"
+version = "0.0.4"
 authors = ["Nigel Schuster <Neitsch@users.noreply.github.com>"]
 license = "MIT"
 edition = "2018"
