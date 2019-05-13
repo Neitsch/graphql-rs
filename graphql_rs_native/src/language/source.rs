@@ -10,7 +10,7 @@ pub struct Location {
 /// starts at line 40 in a file named Foo.graphql, it might be useful for name to
 /// be "Foo.graphql" and location to be `{ line: 40, column: 1 }`.
 /// line and column in locationOffset are 1-indexed
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Source {
     pub body: String,
     name: String,
