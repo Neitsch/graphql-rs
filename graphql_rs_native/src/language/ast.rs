@@ -106,7 +106,7 @@ pub struct OperationDefinition {
     pub selection_set: SelectionSet,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub enum OperationType {
     #[serde(rename = "query")]
     QUERY,

@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Location {
     line: u64,
     column: u64,
