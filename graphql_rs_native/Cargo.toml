@@ -19,3 +19,10 @@ serde = "1.0.80"
 
 [badges]
 travis-ci = { repository = "neitsch/graphql-rs", branch = "master" }
+
+[dev-dependencies]
+criterion = "0.2"
+
+[[bench]]
+name = "graphql_rs_native_benchmark"
+harness = false
