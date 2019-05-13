@@ -658,6 +658,13 @@ fn test_document_1() {
     );
 }
 
+/// Takes a graphql source representation and returns the parsed document.
+/// ```
+/// # use graphql_rs_native::language::parser::parse;
+/// # use graphql_rs_native::language::source::Source;
+/// let document = parse(Source::new("type User { id: ID }".to_string(), None, None));
+/// assert_eq!(document.definitions.len(), 1);
+/// ```
 pub fn parse(source: Source) -> Document {
     let parse_result = document(CompleteByteSlice(source.body.as_bytes())).unwrap();
     assert_eq!(parse_result.0.len(), 0);

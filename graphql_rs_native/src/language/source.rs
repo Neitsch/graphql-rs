@@ -1,3 +1,4 @@
+/// This is a struct that represents the cursor location in the source document. Note that it uses line and column as opposed to a raw offset.
 #[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Location {
     line: u64,
@@ -12,7 +13,9 @@ pub struct Location {
 /// line and column in locationOffset are 1-indexed
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Source {
+    /// The graphql source text
     pub body: String,
+    /// The name of the GraphQL document if applicable
     name: String,
     #[serde(rename = "locationOffset")]
     location_offset: Location,

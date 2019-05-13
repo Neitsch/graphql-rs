@@ -545,17 +545,26 @@ pub struct UnionTypeExtension {
 #[serde(tag = "kind")]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct EnumTypeExtension {
+    /// The location of the enum extension in the source text
     pub loc: Option<Location>,
+    /// The name of the "target" enum
     pub name: Name,
+    /// A list of directives assigned to the enum extension
     pub directives: Option<Vec<Directive>>,
+    /// A list of possible values to extend the enum by.
     pub values: Option<Vec<EnumValueDefinition>>,
 }
 
+/// An input object type extension can be used to add fields to an existing input object
 #[serde(tag = "kind")]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct InputObjectTypeExtension {
+    /// The location of the input object extension in the source text
     pub loc: Option<Location>,
+    /// The name of the "target" input object
     pub name: Name,
+    /// A list of directives assigned to the input object extension
     pub directives: Option<Vec<Directive>>,
+    /// A list of fields that the input object extension has
     pub fields: Option<Vec<InputValueDefinition>>,
 }
