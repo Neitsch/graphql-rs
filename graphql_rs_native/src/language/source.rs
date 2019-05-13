@@ -14,7 +14,7 @@ pub struct Location {
 pub struct Source {
     pub body: String,
     name: String,
-    #[serde(rename="locationOffset")]
+    #[serde(rename = "locationOffset")]
     location_offset: Location,
 }
 

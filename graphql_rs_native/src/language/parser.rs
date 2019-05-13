@@ -28,10 +28,7 @@ named!(whitespace0<CompleteByteSlice, CompleteByteSlice>,
 fn test_whitespace() {
     assert_eq!(
         whitespace0(CompleteByteSlice(b" # test\n")),
-        Ok((
-            CompleteByteSlice(b""),
-            CompleteByteSlice(b" # test\n")
-        ))
+        Ok((CompleteByteSlice(b""), CompleteByteSlice(b" # test\n")))
     );
 }
 
@@ -595,8 +592,8 @@ fn test_definition() {
         definition(CompleteByteSlice(b"schema {}")),
         Ok((
             CompleteByteSlice(b""),
-            Definition::TypeSystemDefinition(Box::new(TypeSystemDefinition::SchemaDefinition(Box::new(
-                SchemaDefinition {
+            Definition::TypeSystemDefinition(Box::new(TypeSystemDefinition::SchemaDefinition(
+                Box::new(SchemaDefinition {
                     loc: None,
                     directives: None,
                     operation_types: vec![]

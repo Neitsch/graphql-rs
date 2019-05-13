@@ -25,7 +25,9 @@ matrix:
     - language: rust
       before_script:
         - rustup component add clippy
+        - rustup component add rustfmt
       script:
+        - cargo fmt --all -- --check
         - cargo build --verbose --all
         - cargo clippy -- -D warnings
         - cargo test --verbose --all
