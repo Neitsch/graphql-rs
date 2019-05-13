@@ -48,7 +48,7 @@
     unused_parens,
     unused_unsafe,
     unused_variables,
-    while_true,
+    while_true
 )]
 #![warn(rust_2018_idioms)]
 

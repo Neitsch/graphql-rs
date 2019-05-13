@@ -19,6 +19,13 @@ pub struct Source {
 }
 
 impl Source {
+    /// Creates a new Source object. The most important value is the `body`, which is the graphql source text
+    /// ```
+    /// # use graphql_rs_native::language::source::Source;
+    /// let source_text = "type User { id: ID }".to_string();
+    /// let source = Source::new(source_text.clone(), None, None);
+    /// assert_eq!(source.body, source_text)
+    /// ```
     pub fn new(body: String, name: Option<String>, location_offset: Option<Location>) -> Source {
         Source {
             body,
