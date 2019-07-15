@@ -1,130 +1,117 @@
-use nom::types::CompleteByteSlice;
-use nom::{
-    alt, call, delimited, do_parse, many0, many1, map, named, named_args, one_of, opt, pair, peek,
-    preceded, recognize, separated_list, separated_pair, switch, tag, take_until, take_while,
-    take_while1, terminated,
-};
-
 use super::ast::*;
 use super::source::Source;
+use nom::{
+    branch::alt,
+    bytes::complete::{tag, take_while, take_while1},
+    character::{complete::one_of, is_alphanumeric, is_digit},
+    combinator::{map, opt, peek, recognize},
+    error::{ErrorKind, ParseError},
+    error_position,
+    multi::{many0, many1, separated_list, separated_nonempty_list},
+    sequence::{pair, preceded, separated_pair, terminated, delimited},
+    IResult,
+};
 
-fn whitespace(c: u8) -> bool {
-    (c == b' ') || (c == b'\t') || (c == b'\n') || (c == b',')
+/// Takes a graphql source representation and returns the parsed document.
+/// ```
+/// # use graphql_rs_native::language::parser::parse;
+/// # use graphql_rs_native::language::source::Source;
+/// let document = parse(Source::new("type User { id: ID }".to_string(), None, None));
+/// assert_eq!(document.definitions.len(), 1);
+/// ```
+pub fn parse(source: Source) -> Document {
+    let parse_result = document::<(&str, ErrorKind)>(&source.body).map_err(|e| panic!("{:?}", e));
+    parse_result.unwrap().1
 }
 
-named!(
-    whitespace0<CompleteByteSlice<'_>, CompleteByteSlice<'_>>,
-    recognize!(many0!(alt!(
-        do_parse!(
-            tag!("#")
-            >> take_until!("\n")
-            >> (())
-        ) => {|_| ()} |
-        take_while!(whitespace) => {|_| ()}
-    )))
-);
-
-#[test]
-fn test_whitespace() {
-    assert_eq!(
-        whitespace0(CompleteByteSlice(b" # test\n")),
-        Ok((CompleteByteSlice(b""), CompleteByteSlice(b" # test\n")))
-    );
+impl From<String> for Document {
+    fn from(string: String) -> Document {
+        Source::new(string, None, None).into()
+    }
 }
 
-fn is_alphanumeric_or_underscore(c: u8) -> bool {
-    nom::is_alphanumeric(c) || (c == b'_')
+impl From<Source> for Document {
+    fn from(source: Source) -> Document {
+        parse(source)
+    }
 }
 
-named_args!(
-    punct<'a>(tag_value: &str) <CompleteByteSlice<'a>, CompleteByteSlice<'a>>,
-    do_parse!(
-        whitespace0
-        >> t: tag!(tag_value)
-        >> whitespace0
-        >> (t)
-    )
-);
+fn sp1<'a, E: ParseError<&'a str>>(i: &'a str) -> IResult<&'a str, &'a str, E> {
+    let chars = " \t\r\n f";
 
-named!(
-    name<CompleteByteSlice<'_>, Name>,
-    map!(
-        delimited!(
-            whitespace0,
-            take_while1!(is_alphanumeric_or_underscore),
-            whitespace0
-        ),
-        |value| Name {
-            loc: None,
-            value: std::str::from_utf8(value.0).unwrap().to_string(),
-        }
-    )
-);
+    take_while1(move |c| chars.contains(c))(i)
+}
 
-named!(
-    variable<CompleteByteSlice<'_>, Variable>,
-    map!(preceded!(call!(punct, "$"), name), |name| Variable {
-        loc: None,
-        name: name
+fn graphql_tag<'a, E: ParseError<&'a str>>(t: &'a str) -> impl Fn(&'a str) -> IResult<&'a str, &'a str, E> {
+    move |input: &'a str| {
+        delimited(
+            opt(sp1),
+            tag(t),
+            opt(sp1)
+        )(input)
+    }
+}
+
+fn name<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Name, E> {
+    take_while1(|c: char| is_alphanumeric(c as u8))(source).map(|(rest, string)| {
+        (
+            rest,
+            Name {
+                loc: None,
+                value: string.to_string(),
+            },
+        )
     })
-);
+}
 
-named!(
-    integer_part<CompleteByteSlice<'_>, ()>,
-    do_parse!(
-        opt!(tag!("-"))
-            >> alt!(
-                tag!("0") => {|_| CompleteByteSlice(b"")} |
-                recognize!(
-                    do_parse!(
-                        one_of!("123456789")
-                        >> take_while!(nom::is_digit)
-                        >> (())
-                    )
-                )
-            )
-            >> (())
-    )
-);
+fn variable<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Variable, E> {
+    preceded(graphql_tag("$"), name)(source).map(|(rest, name)| (rest, Variable { loc: None, name }))
+}
 
-named!(
-    fractional_part<CompleteByteSlice<'_>, ()>,
-    map!(preceded!(tag!("."), take_while!(nom::is_digit)), |_| ())
-);
+fn integer_part<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, &'a str, E> {
+    preceded(
+        opt(tag("-")),
+        preceded(one_of("123456789"), take_while(|c: char| is_digit(c as u8))),
+    )(source)
+}
 
-named!(
-    exponential_part<CompleteByteSlice<'_>, ()>,
-    do_parse!(one_of!("eE") >> opt!(one_of!("+-")) >> take_while!(nom::is_digit) >> (()))
-);
+fn fractional_part<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, &'a str, E> {
+    preceded(tag("."), take_while(|c: char| is_digit(c as u8)))(source)
+}
 
-named!(
-    float_value<CompleteByteSlice<'_>, FloatValue>,
-    map!(
-        delimited!(
-            whitespace0,
-            recognize!(preceded!(
-                integer_part,
-                alt!(
-                    fractional_part => {|_|""} |
-                    exponential_part => {|_|""} |
-                    pair!(fractional_part, exponential_part) => {|_|""}
-                )
-            )),
-            whitespace0
-        ),
-        |value| FloatValue {
-            loc: None,
-            value: std::str::from_utf8(value.0).unwrap().to_string()
-        }
-    )
-);
+fn exponential_part<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, &'a str, E> {
+    preceded(
+        one_of("eE"),
+        preceded(opt(one_of("+-")), take_while(|c: char| is_digit(c as u8))),
+    )(source)
+}
+
+fn float_value<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, FloatValue, E> {
+    recognize(preceded(
+        integer_part,
+        alt((
+            fractional_part,
+            exponential_part,
+            recognize(pair(fractional_part, exponential_part)),
+        )),
+    ))(source)
+    .map(|(rest, res)| {
+        (
+            rest,
+            FloatValue {
+                loc: None,
+                value: res.to_string(),
+            },
+        )
+    })
+}
 
 #[test]
 fn test_float_value() {
     assert_eq!(
-        float_value(CompleteByteSlice(b"1.1")),
+        float_value::<(&str, ErrorKind)>("1.1"),
         Ok((
-            CompleteByteSlice(b""),
+            "",
             FloatValue {
                 loc: None,
                 value: "1.1".to_string()
@@ -133,17 +120,18 @@ fn test_float_value() {
     );
 }
 
-named!(
-    int_value<CompleteByteSlice<'_>, IntValue>,
-    map!(
-        delimited!(whitespace0, recognize!(integer_part), whitespace0),
-        |value| IntValue {
-            loc: None,
-            value: std::str::from_utf8(value.0).unwrap().to_string()
-        }
-    )
-);
-
+fn int_value<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, IntValue, E> {
+    recognize(integer_part)(source).map(|(rest, val)| {
+        (
+            rest,
+            IntValue {
+                loc: None,
+                value: val.to_string(),
+            },
+        )
+    })
+}
+/*
 named!(
     value<CompleteByteSlice<'_>, Value>,
     alt!(
@@ -157,99 +145,125 @@ named!(
         // object_value => {|v| Value::ObjectValue(Box::new(v))}
     )
 );
+*/
+fn value<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Value, E> {
+    alt((
+        move |input: &'a str| {
+            let variable_res = variable(input);
+            variable_res.map(|(rest, v)| (rest, Value::Variable(Box::new(v))))
+        },
+        move |input: &'a str| {
+            let float_res = float_value(input);
+            float_res.map(|(rest, v)| (rest, Value::FloatValue(Box::new(v))))
+        },
+        move |input: &'a str| {
+            let int_res = int_value(input);
+            int_res.map(|(rest, v)| (rest, Value::IntValue(Box::new(v))))
+        },
+    ))(source)
+}
 
-named!(
-    argument<CompleteByteSlice<'_>, Argument>,
-    map!(separated_pair!(name, call!(punct, ":"), value), |(
-        name,
-        value,
-    )| {
-        Argument {
-            loc: None,
-            name: name,
-            value: value,
-        }
-    })
-);
-
-named!(
-    arguments<CompleteByteSlice<'_>, Vec<Argument>>,
-    delimited!(call!(punct, "("), many0!(argument), call!(punct, ")"))
-);
-
-named!(
-    directive<CompleteByteSlice<'_>, Directive>,
-    do_parse!(
-        call!(punct, "@")
-            >> name: name
-            >> arguments: opt!(arguments)
-            >> (Directive {
+fn argument<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Argument, E> {
+    separated_pair(name, graphql_tag(":"), value)(source).map(|(rest, (name, value))| {
+        (
+            rest,
+            Argument {
                 loc: None,
-                name: name,
-                arguments: arguments,
-            })
-    )
-);
-
-named!(
-    directives<CompleteByteSlice<'_>, Vec<Directive>>,
-    many1!(directive)
-);
-
-named!(
-    operation_type<CompleteByteSlice<'_>, OperationType>,
-    alt!(
-        tag!("query") => {|_| OperationType::QUERY} |
-        tag!("mutation") => {|_| OperationType::MUTATION} |
-        tag!("subscription") => {|_| OperationType::SUBSCRIPTION}
-    )
-);
-
-named!(
-    named_type<CompleteByteSlice<'_>, NamedType>,
-    map!(name, |name| NamedType {
-        loc: None,
-        name: name
+                name,
+                value,
+            },
+        )
     })
-);
+}
 
-named!(
-    root_operation_type_definition<CompleteByteSlice<'_>, OperationTypeDefinition>,
-    map!(
-        separated_pair!(operation_type, call!(punct, ":"), named_type),
-        |(operation_type, named_type)| OperationTypeDefinition {
-            loc: None,
-            operation: operation_type,
-            _type: named_type
-        }
-    )
-);
+fn arguments<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Vec<Argument>, E> {
+    preceded(
+        graphql_tag("("),
+        terminated(separated_list(sp1, argument), graphql_tag(")")),
+    )(source)
+}
 
-named!(
-    schema_definition<CompleteByteSlice<'_>, SchemaDefinition>,
-    do_parse!(
-        tag!("schema")
-            >> directives: opt!(directives)
-            >> operation_types:
-                delimited!(
-                    call!(punct, "{"),
-                    many0!(root_operation_type_definition),
-                    call!(punct, "}")
-                )
-            >> (SchemaDefinition {
+fn directive<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Directive, E> {
+    let rest = graphql_tag("@")(source)?.0;
+    let (rest, nam) = name(rest)?;
+    opt(arguments)(rest).map(|(rest, args)| {
+        (
+            rest,
+            Directive {
                 loc: None,
-                directives: directives,
-                operation_types: operation_types
-            })
+                name: nam,
+                arguments: args,
+            },
+        )
+    })
+}
+
+fn directives<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Vec<Directive>, E> {
+    many1(directive)(source)
+}
+
+fn operation_type<'a, E: ParseError<&'a str>>(
+    source: &'a str,
+) -> IResult<&'a str, OperationType, E> {
+    alt((
+        move |input: &'a str| tag("query")(input).map(|(rest, _)| (rest, OperationType::QUERY)),
+        move |input: &'a str| {
+            tag("mutation")(input).map(|(rest, _)| (rest, OperationType::MUTATION))
+        },
+        move |input: &'a str| {
+            tag("subscription")(input).map(|(rest, _)| (rest, OperationType::SUBSCRIPTION))
+        },
+    ))(source)
+}
+
+fn named_type<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, NamedType, E> {
+    name(source).map(|(rest, name)| (rest, NamedType { loc: None, name }))
+}
+
+fn root_operation_type_definition<'a, E: ParseError<&'a str>>(
+    source: &'a str,
+) -> IResult<&'a str, OperationTypeDefinition, E> {
+    separated_pair(operation_type, graphql_tag(":"), named_type)(source).map(
+        |(rest, (operation, named_type))| {
+            (
+                rest,
+                OperationTypeDefinition {
+                    loc: None,
+                    operation,
+                    _type: named_type,
+                },
+            )
+        },
     )
-);
+}
+
+fn schema_definition<'a, E: ParseError<&'a str>>(
+    source: &'a str,
+) -> IResult<&'a str, SchemaDefinition, E> {
+    let (source, _) = tag("schema")(source)?;
+    let (source, directives) = opt(directives)(source)?;
+    preceded(
+        graphql_tag("{"),
+        terminated(many0(root_operation_type_definition), graphql_tag("}")),
+    )(source)
+    .map(|(rest, operation_types)| {
+        (
+            rest,
+            SchemaDefinition {
+                loc: None,
+                directives,
+                operation_types,
+            },
+        )
+    })
+}
 
 #[test]
 fn test_schema_definition() {
     assert_eq!(
-        schema_definition(CompleteByteSlice(b"schema @abc{}")),
+        schema_definition::<(&str, ErrorKind)>("schema @abc {}"),
         Ok((
-            CompleteByteSlice(b""),
+            "",
             SchemaDefinition {
                 loc: None,
                 directives: Some(vec![Directive {
@@ -266,325 +280,401 @@ fn test_schema_definition() {
     );
 }
 
-named!(
-    directive_locations<CompleteByteSlice<'_>, Vec<Name>>,
-    preceded!(
-        opt!(call!(punct, "|")),
-        separated_list!(
-            call!(punct, "|"),
-            switch!(
-                peek!(take_while1!(is_alphanumeric_or_underscore)),
-                CompleteByteSlice(b"QUERY")
-                | CompleteByteSlice(b"MUTATION")
-                | CompleteByteSlice(b"SUBSCRIPTION")
-                | CompleteByteSlice(b"FIELD")
-                | CompleteByteSlice(b"FRAGMENT_DEFINITION")
-                | CompleteByteSlice(b"FRAGMENT_SPREAD")
-                | CompleteByteSlice(b"INLINE_FRAGMENT")
-                | CompleteByteSlice(b"SCHEMA")
-                | CompleteByteSlice(b"SCALAR")
-                | CompleteByteSlice(b"OBJECT")
-                | CompleteByteSlice(b"FIELD_DEFINITION")
-                | CompleteByteSlice(b"ARGUMENT_DEFINITION")
-                | CompleteByteSlice(b"INTERFACE")
-                | CompleteByteSlice(b"UNION")
-                | CompleteByteSlice(b"ENUM")
-                | CompleteByteSlice(b"ENUM_VALUE")
-                | CompleteByteSlice(b"INPUT_OBJECT")
-                | CompleteByteSlice(b"INPUT_FIELD_DEFINITION") => map!(name, |v| v) |
-                _ => map!(name, |v| v)
-            )
+fn directive_locations<'a, E: ParseError<&'a str>>(
+    source: &'a str,
+) -> IResult<&'a str, Vec<Name>, E> {
+    preceded(
+        opt(graphql_tag("|")),
+        separated_list(graphql_tag("!"), move |input: &'a str| {
+            let (rest, loc) = peek(take_while1(|c: char| is_alphanumeric(c as u8)))(input)?;
+            match loc {
+                "QUERY"
+                | "MUTATION"
+                | "SUBSCRIPTION"
+                | "FIELD"
+                | "FRAGMENT_DEFINITION"
+                | "FRAGMENT_SPREAD"
+                | "INLINE_FRAGMENT"
+                | "SCHEMA"
+                | "SCALAR"
+                | "OBJECT"
+                | "FIELD_DEFINITION"
+                | "ARGUMENT_DEFINITION"
+                | "INTERFACE"
+                | "UNION"
+                | "ENUM"
+                | "ENUM_VALUE"
+                | "INPUT_OBJECT"
+                | "INPUT_FIELD_DEFINITION" => name(loc).map(|(_, name)| (rest, name)),
+                _ => panic!("lol"),
+            }
+        }),
+    )(source)
+}
+
+fn default_value<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Value, E> {
+    preceded(graphql_tag("="), value)(source)
+}
+
+fn list_type<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, ListType, E> {
+    preceded(graphql_tag("["), terminated(type_node, graphql_tag("]")))(source).map(|(rest, v)| {
+        (
+            rest,
+            ListType {
+                loc: None,
+                _type: Box::new(v),
+            },
         )
-    )
-);
+    })
+}
 
-named!(
-    default_value<CompleteByteSlice<'_>, Value>,
-    preceded!(call!(punct, "="), value)
-);
+fn non_null_type<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, NonNullType, E> {
+    terminated(
+        alt((
+            move |input: &'a str| {
+                list_type(input).map(|(rest, v)| (rest, NonNullInnerType::ListType(Box::new(v))))
+            },
+            move |input: &'a str| {
+                named_type(input).map(|(rest, v)| (rest, NonNullInnerType::NamedType(Box::new(v))))
+            },
+        )),
+        graphql_tag("!"),
+    )(source)
+    .map(|(rest, v)| {
+        (
+            rest,
+            NonNullType {
+                loc: None,
+                _type: v,
+            },
+        )
+    })
+}
 
-named!(
-    list_type<CompleteByteSlice<'_>, ListType>,
-    map!(
-        delimited!(call!(punct, "["), _type, call!(punct, "]")),
-        |v| ListType {
-            loc: None,
-            _type: Box::new(v)
-        }
-    )
-);
+fn type_node<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Type, E> {
+    alt((
+        move |input: &'a str| {
+            non_null_type(input).map(|(rest, v)| (rest, Type::NonNullType(Box::new(v))))
+        },
+        move |input: &'a str| list_type(input).map(|(rest, v)| (rest, Type::ListType(Box::new(v)))),
+        move |input: &'a str| {
+            named_type(input).map(|(rest, v)| (rest, Type::NamedType(Box::new(v))))
+        },
+    ))(source)
+}
 
-named!(
-    non_null_type<CompleteByteSlice<'_>, NonNullType>,
-    map!(
-        terminated!(
-            alt!(
-                list_type => {|v| NonNullInnerType::ListType(Box::new(v))} |
-                named_type => {|v| NonNullInnerType::NamedType(Box::new(v))}
-            ),
-            tag!("!")
-        ),
-        |v| NonNullType {
-            loc: None,
-            _type: v
-        }
-    )
-);
-
-named!(
-    _type<CompleteByteSlice<'_>, Type>,
-    alt!(
-        non_null_type => {|v| Type::NonNullType(Box::new(v))} |
-        list_type => {|v| Type::ListType(Box::new(v))} |
-        named_type => {|v| Type::NamedType(Box::new(v))}
-    )
-);
-
-named!(
-    input_value_definition<CompleteByteSlice<'_>, InputValueDefinition>,
-    do_parse!(
-        name: name
-            >> call!(punct, ":")
-            >> _type: _type
-            >> default_value: opt!(default_value)
-            >> directives: opt!(directives)
-            >> (InputValueDefinition {
+fn input_value_definition<'a, E: ParseError<&'a str>>(
+    source: &'a str,
+) -> IResult<&'a str, InputValueDefinition, E> {
+    let (source, name) = name(source)?;
+    let (source, _) = graphql_tag(":")(source)?;
+    let (source, type_node) = type_node(source)?;
+    let (source, default_value) = opt(default_value)(source)?;
+    opt(directives)(source).map(|(rest, directives)| {
+        (
+            rest,
+            InputValueDefinition {
                 loc: None,
                 description: None,
-                name: name,
-                _type: _type,
-                default_value: default_value,
-                directives: directives,
-            })
-    )
-);
+                name,
+                _type: type_node,
+                default_value,
+                directives,
+            },
+        )
+    })
+}
 
-named!(
-    argument_definition<CompleteByteSlice<'_>, Vec<InputValueDefinition>>,
-    delimited!(
-        call!(punct, "("),
-        many1!(input_value_definition),
-        call!(punct, ")")
-    )
-);
+fn argument_definition<'a, E: ParseError<&'a str>>(
+    source: &'a str,
+) -> IResult<&'a str, Vec<InputValueDefinition>, E> {
+    preceded(
+        graphql_tag("{"),
+        terminated(many1(input_value_definition), graphql_tag("}")),
+    )(source)
+}
 
-named!(
-    directive_definition<CompleteByteSlice<'_>, DirectiveDefinition>,
-    do_parse!(
-        tag!("directive")
-            >> call!(punct, "@")
-            >> name: name
-            >> arguments: opt!(argument_definition)
-            >> tag!("on")
-            >> locations: directive_locations
-            >> (DirectiveDefinition {
+fn directive_definition<'a, E: ParseError<&'a str>>(
+    source: &'a str,
+) -> IResult<&'a str, DirectiveDefinition, E> {
+    let (source, _) = tag("directive")(source)?;
+    let (source, _) = graphql_tag("@")(source)?;
+    let (source, name) = name(source)?;
+    let (source, arguments) = opt(argument_definition)(source)?;
+    let (source, _) = tag("on")(source)?;
+    directive_locations(source).map(|(rest, locations)| {
+        (
+            rest,
+            DirectiveDefinition {
                 loc: None,
                 description: None,
-                name: name,
-                arguments: arguments,
-                locations: locations,
-            })
-    )
-);
+                name,
+                arguments,
+                locations,
+            },
+        )
+    })
+}
 
-named!(
-    union_definition<CompleteByteSlice<'_>, UnionTypeDefinition>,
-    do_parse!(
-        tag!("union")
-            >> name: name
-            >> directives: opt!(directives)
-            >> union_member_types:
-                opt!(preceded!(
-                    opt!(call!(punct, "|")),
-                    separated_list!(call!(punct, "|"), named_type)
-                ))
-            >> (UnionTypeDefinition {
+fn union_definition<'a, E: ParseError<&'a str>>(
+    source: &'a str,
+) -> IResult<&'a str, UnionTypeDefinition, E> {
+    let (source, _) = tag("union")(source)?;
+    let (source, name) = name(source)?;
+    let (source, directives) = opt(directives)(source)?;
+    opt(preceded(
+        opt(graphql_tag("|")),
+        separated_list(graphql_tag("|"), named_type),
+    ))(source)
+    .map(|(rest, union_member_types)| {
+        (
+            rest,
+            UnionTypeDefinition {
                 loc: None,
                 description: None,
-                name: name,
-                directives: directives,
-                types: union_member_types
-            })
-    )
-);
+                name,
+                directives,
+                types: union_member_types,
+            },
+        )
+    })
+}
 
-named!(
-    scalar_definition<CompleteByteSlice<'_>, ScalarTypeDefinition>,
-    do_parse!(
-        tag!("scalar")
-            >> name: name
-            >> directives: opt!(directives)
-            >> (ScalarTypeDefinition {
+fn scalar_definition<'a, E: ParseError<&'a str>>(
+    source: &'a str,
+) -> IResult<&'a str, ScalarTypeDefinition, E> {
+    let (source, _) = tag("scalar")(source)?;
+    let (source, name) = name(source)?;
+    opt(directives)(source).map(|(rest, directives)| {
+        (
+            rest,
+            ScalarTypeDefinition {
                 loc: None,
                 description: None,
-                name: name,
-                directives: directives
-            })
-    )
-);
+                name,
+                directives,
+            },
+        )
+    })
+}
 
-named!(
-    field_definition<CompleteByteSlice<'_>, FieldDefinition>,
-    do_parse!(
-        name: name
-            >> argument_definition: opt!(argument_definition)
-            >> call!(punct, ":")
-            >> _type: _type
-            >> directives: opt!(directives)
-            >> (FieldDefinition {
+fn field_definition<'a, E: ParseError<&'a str>>(
+    source: &'a str,
+) -> IResult<&'a str, FieldDefinition, E> {
+    let (source, name) = name(source)?;
+    let (source, argument_definition) = opt(argument_definition)(source)?;
+    let (source, _) = graphql_tag(":")(source)?;
+    let (source, type_node) = type_node(source)?;
+    opt(directives)(source).map(|(rest, directives)| {
+        (
+            rest,
+            FieldDefinition {
                 loc: None,
                 description: None,
-                name: name,
+                name,
                 arguments: argument_definition,
-                _type: _type,
-                directives: directives
-            })
-    )
-);
+                _type: type_node,
+                directives,
+            },
+        )
+    })
+}
 
-named!(
-    fields_definition<CompleteByteSlice<'_>, Vec<FieldDefinition>>,
-    delimited!(
-        call!(punct, "{"),
-        many0!(field_definition),
-        call!(punct, "}")
-    )
-);
+fn fields_definition<'a, E: ParseError<&'a str>>(
+    source: &'a str,
+) -> IResult<&'a str, Vec<FieldDefinition>, E> {
+    preceded(graphql_tag("{"), terminated(many0(field_definition), graphql_tag("}")))(source)
+}
 
-named!(
-    interface_definition<CompleteByteSlice<'_>, InterfaceTypeDefinition>,
-    do_parse!(
-        tag!("interface")
-            >> name: name
-            >> directives: opt!(directives)
-            >> fields_definition: opt!(fields_definition)
-            >> (InterfaceTypeDefinition {
+fn interface_definition<'a, E: ParseError<&'a str>>(
+    source: &'a str,
+) -> IResult<&'a str, InterfaceTypeDefinition, E> {
+    let (source, _) = tag("interface")(source)?;
+    let (source, name) = name(source)?;
+    let (source, directives) = opt(directives)(source)?;
+    opt(fields_definition)(source).map(|(rest, fd)| {
+        (
+            rest,
+            InterfaceTypeDefinition {
                 loc: None,
                 description: None,
-                name: name,
-                directives: directives,
-                fields: fields_definition
-            })
-    )
-);
+                name,
+                directives,
+                fields: fd,
+            },
+        )
+    })
+}
 
-named!(
-    input_fields_definition<CompleteByteSlice<'_>, Vec<InputValueDefinition>>,
-    delimited!(
-        call!(punct, "{"),
-        many0!(input_value_definition),
-        call!(punct, "}")
-    )
-);
+fn input_fields_definition<'a, E: ParseError<&'a str>>(
+    source: &'a str,
+) -> IResult<&'a str, Vec<InputValueDefinition>, E> {
+    preceded(
+        graphql_tag("{"),
+        terminated(many0(input_value_definition), graphql_tag("}")),
+    )(source)
+}
 
-named!(
-    input_definition<CompleteByteSlice<'_>, InputObjectTypeDefinition>,
-    do_parse!(
-        tag!("input")
-            >> name: name
-            >> directives: opt!(directives)
-            >> fields: opt!(input_fields_definition)
-            >> (InputObjectTypeDefinition {
+fn input_definition<'a, E: ParseError<&'a str>>(
+    source: &'a str,
+) -> IResult<&'a str, InputObjectTypeDefinition, E> {
+    let (source, _) = tag("input")(source)?;
+    let (source, name) = name(source)?;
+    let (source, directives) = opt(directives)(source)?;
+    opt(input_fields_definition)(source).map(|(rest, ifd)| {
+        (
+            rest,
+            InputObjectTypeDefinition {
                 loc: None,
                 description: None,
-                name: name,
-                directives: directives,
-                fields: fields
-            })
-    )
-);
+                name,
+                directives,
+                fields: ifd,
+            },
+        )
+    })
+}
 
-named!(
-    object_definition<CompleteByteSlice<'_>, ObjectTypeDefinition>,
-    do_parse!(
-        tag!("type")
-            >> name: name
-            >> implements_interfaces:
-                opt!(do_parse!(
-                    tag!("implements")
-                        >> interfaces:
-                            preceded!(opt!(tag!("&")), separated_list!(tag!("&"), named_type))
-                        >> (interfaces)
-                ))
-            >> directives: opt!(directives)
-            >> fields_definition: opt!(fields_definition)
-            >> (ObjectTypeDefinition {
+fn object_definition<'a, E: ParseError<&'a str>>(
+    source: &'a str,
+) -> IResult<&'a str, ObjectTypeDefinition, E> {
+    let (source, _) = terminated(tag("type"), sp1)(source)?;
+    let (source, name_value) = name(source)?;
+    let (source, implements_interfaces) = opt(move |input: &'a str| {
+        let (rest, _) = tag("implements")(input)?;
+        preceded(opt(tag("&")), separated_list(tag("&"), named_type))(rest)
+    })(source)?;
+    let (source, directives) = opt(directives)(source)?;
+    opt(fields_definition)(source).map(|(rest, fd)| {
+        (
+            rest,
+            ObjectTypeDefinition {
                 loc: None,
                 description: None,
-                name: name,
+                name: name_value,
                 interfaces: implements_interfaces,
-                directives: directives,
-                fields: fields_definition
-            })
-    )
-);
+                directives,
+                fields: fd,
+            },
+        )
+    })
+}
 
-named!(
-    type_definition<CompleteByteSlice<'_>, TypeDefinition>,
-    switch!(
-        peek!(take_while1!(nom::is_alphanumeric)),
-        CompleteByteSlice(b"type") => map!(map!(object_definition, Box::new), TypeDefinition::ObjectTypeDefinition)
-        | CompleteByteSlice(b"interface") => map!(map!(interface_definition, Box::new), TypeDefinition::InterfaceTypeDefinition)
-        | CompleteByteSlice(b"scalar") => map!(map!(scalar_definition, Box::new), TypeDefinition::ScalarTypeDefinition)
-        | CompleteByteSlice(b"union") => map!(map!(union_definition, Box::new), TypeDefinition::UnionTypeDefinition)
-        | CompleteByteSlice(b"enum") => map!(map!(enum_definition, Box::new), TypeDefinition::EnumTypeDefinition)
-        | CompleteByteSlice(b"input") => map!(map!(input_definition, Box::new), TypeDefinition::InputObjectTypeDefinition)
-        | _ => map!(map!(input_definition, Box::new), TypeDefinition::InputObjectTypeDefinition)
-    )
-);
+fn type_definition<'a, E: ParseError<&'a str>>(
+    source: &'a str,
+) -> IResult<&'a str, TypeDefinition, E> {
+    let (source, prefix) = peek(take_while1(|c: char| is_alphanumeric(c as u8)))(source)?;
+    match prefix {
+        "type" => object_definition(source).map(|(rest, graphql_object)| {
+            (
+                rest,
+                TypeDefinition::ObjectTypeDefinition(Box::new(graphql_object)),
+            )
+        }),
+        "interface" => interface_definition(source).map(|(rest, graphql_interface)| {
+            (
+                rest,
+                TypeDefinition::InterfaceTypeDefinition(Box::new(graphql_interface)),
+            )
+        }),
+        "scalar" => scalar_definition(source).map(|(rest, graphql_scalar)| {
+            (
+                rest,
+                TypeDefinition::ScalarTypeDefinition(Box::new(graphql_scalar)),
+            )
+        }),
+        "union" => union_definition(source).map(|(rest, graphql_union)| {
+            (
+                rest,
+                TypeDefinition::UnionTypeDefinition(Box::new(graphql_union)),
+            )
+        }),
+        "enum" => enum_definition(source).map(|(rest, graphql_enum)| {
+            (
+                rest,
+                TypeDefinition::EnumTypeDefinition(Box::new(graphql_enum)),
+            )
+        }),
+        "input" => input_definition(source).map(|(rest, graphql_input)| {
+            (
+                rest,
+                TypeDefinition::InputObjectTypeDefinition(Box::new(graphql_input)),
+            )
+        }),
+        _ => panic!("lol"),
+    }
+}
 
-named!(
-    enum_definition<CompleteByteSlice<'_>, EnumTypeDefinition>,
-    do_parse!(
-        tag!("enum")
-            >> name_value: name
-            >> directives_value: opt!(directives)
-            >> values:
-                opt!(delimited!(
-                    call!(punct, "{"),
-                    many0!(do_parse!(
-                        v: name
-                            >> directives2: opt!(directives)
-                            >> (EnumValueDefinition {
-                                loc: None,
-                                description: None,
-                                name: v,
-                                directives: directives2
-                            })
-                    )),
-                    call!(punct, "}")
-                ))
-            >> (EnumTypeDefinition {
+fn enum_definition<'a, E: ParseError<&'a str>>(
+    source: &'a str,
+) -> IResult<&'a str, EnumTypeDefinition, E> {
+    let (source, _) = tag("enum")(source)?;
+    let (source, name_value) = name(source)?;
+    let (source, directives_value) = opt(directives)(source)?;
+    opt(preceded(
+        graphql_tag("{"),
+        terminated(
+            many0(move |input: &'a str| {
+                let (rest, n) = name(input)?;
+                opt(directives)(rest).map(|(rest, d)| {
+                    (
+                        rest,
+                        EnumValueDefinition {
+                            loc: None,
+                            description: None,
+                            name: n,
+                            directives: d,
+                        },
+                    )
+                })
+            }),
+            graphql_tag("}"),
+        ),
+    ))(source)
+    .map(|(rest, values)| {
+        (
+            rest,
+            EnumTypeDefinition {
                 loc: None,
                 description: None,
                 name: name_value,
                 directives: directives_value,
-                values: values
-            })
-    )
-);
+                values,
+            },
+        )
+    })
+}
 
-named!(
-    type_system_definition<CompleteByteSlice<'_>, TypeSystemDefinition>,
-    switch!(peek!(take_while1!(nom::is_alphanumeric)),
-        CompleteByteSlice(b"schema") => map!(map!(schema_definition, Box::new), TypeSystemDefinition::SchemaDefinition) |
-        CompleteByteSlice(b"directive") => map!(map!(directive_definition, Box::new), TypeSystemDefinition::DirectiveDefinition) |
-        CompleteByteSlice(b"type")
-        | CompleteByteSlice(b"interface")
-        | CompleteByteSlice(b"scalar")
-        | CompleteByteSlice(b"union")
-        | CompleteByteSlice(b"enum")
-        | CompleteByteSlice(b"input") => map!(map!(type_definition, Box::new), TypeSystemDefinition::TypeDefinition)
-        | _ => map!(map!(schema_definition, Box::new), TypeSystemDefinition::SchemaDefinition)
-    )
-);
+fn type_system_definition<'a, E: ParseError<&'a str>>(
+    source: &'a str,
+) -> IResult<&'a str, TypeSystemDefinition, E> {
+    let res: IResult<&'a str, &'a str, E> =
+        peek(take_while1(|c: char| is_alphanumeric(c as u8)))(source);
+    let (rest, prefix) = res.unwrap_or_else(|_| panic!("lol"));
+    match prefix {
+        "schema" => schema_definition(rest)
+            .map(|(rest, sd)| (rest, TypeSystemDefinition::SchemaDefinition(Box::new(sd)))),
+        "directive" => directive_definition(rest).map(|(rest, dd)| {
+            (
+                rest,
+                TypeSystemDefinition::DirectiveDefinition(Box::new(dd)),
+            )
+        }),
+        "type" | "interface" | "scalar" | "union" | "enum" | "input" => type_definition(rest)
+            .map(|(rest, td)| (rest, TypeSystemDefinition::TypeDefinition(Box::new(td)))),
+        _ => Err(nom::Err::Failure(error_position!(
+            source,
+            ErrorKind::TagBits
+        ))),
+    }
+}
 
 #[test]
 fn test_type_system_definition() {
     assert_eq!(
-        type_system_definition(CompleteByteSlice(b"schema {}")),
+        type_system_definition::<(&str, ErrorKind)>("schema {}"),
         Ok((
-            CompleteByteSlice(b""),
+            "",
             TypeSystemDefinition::SchemaDefinition(Box::new(SchemaDefinition {
                 loc: None,
                 directives: None,
@@ -594,27 +684,28 @@ fn test_type_system_definition() {
     );
 }
 
-named!(
-    definition<CompleteByteSlice<'_>, Definition>,
-    switch!(peek!(take_while1!(nom::is_alphanumeric)),
-        CompleteByteSlice(b"schema")
-        | CompleteByteSlice(b"type")
-        | CompleteByteSlice(b"interface")
-        | CompleteByteSlice(b"scalar")
-        | CompleteByteSlice(b"union")
-        | CompleteByteSlice(b"enum")
-        | CompleteByteSlice(b"input")
-        | CompleteByteSlice(b"directive") => map!(map!(type_system_definition, Box::new), Definition::TypeSystemDefinition) |
-        _ => map!(map!(type_system_definition, Box::new), Definition::TypeSystemDefinition)
-    )
-);
+fn definition<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Definition, E> {
+    let res: IResult<&'a str, &'a str, E> =
+        peek(take_while1(|c: char| is_alphanumeric(c as u8)))(source);
+    let (rest, prefix) = res.unwrap_or_else(|_| panic!("lol"));
+    match prefix {
+        "schema" | "type" | "interface" | "scalar" | "union" | "enum" | "input" | "directive" => {
+            type_system_definition(rest)
+                .map(|(rest, tsd)| (rest, Definition::TypeSystemDefinition(Box::new(tsd))))
+        }
+        _ => Err(nom::Err::Failure(error_position!(
+            source,
+            ErrorKind::TagBits
+        ))),
+    }
+}
 
 #[test]
 fn test_definition() {
     assert_eq!(
-        definition(CompleteByteSlice(b"schema {}")),
+        definition::<(&str, ErrorKind)>("schema {}"),
         Ok((
-            CompleteByteSlice(b""),
+            "",
             Definition::TypeSystemDefinition(Box::new(TypeSystemDefinition::SchemaDefinition(
                 Box::new(SchemaDefinition {
                     loc: None,
@@ -626,24 +717,41 @@ fn test_definition() {
     );
 }
 
-named!(
-    document<CompleteByteSlice<'_>, Document>,
-    do_parse!(
-        whitespace0
-            >> definitions: many1!(definition)
-            >> (Document {
+fn document<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Document, E> {
+    preceded(opt(sp1), map(separated_nonempty_list(sp1, definition), |definitions| {
+        Document {
+            definitions: definitions,
+            loc: None,
+        }
+    }))(source)
+}
+
+#[test]
+fn my_test_doc() {
+    assert_eq!(
+        document::<(&str, ErrorKind)>("schema{}"),
+        Ok((
+            "",
+            Document {
                 loc: None,
-                definitions: definitions,
-            })
+                definitions: vec![Definition::TypeSystemDefinition(Box::new(
+                    TypeSystemDefinition::SchemaDefinition(Box::new(SchemaDefinition {
+                        loc: None,
+                        directives: None,
+                        operation_types: vec![],
+                    })),
+                )),]
+            }
+        ))
     )
-);
+}
 
 #[test]
 fn test_document_1() {
     assert_eq!(
-        document(CompleteByteSlice(b"schema {}")),
+        document::<(&str, ErrorKind)>("schema {}"),
         Ok((
-            CompleteByteSlice(b""),
+            "",
             Document {
                 loc: None,
                 definitions: vec![Definition::TypeSystemDefinition(Box::new(
@@ -656,29 +764,4 @@ fn test_document_1() {
             }
         ))
     );
-}
-
-/// Takes a graphql source representation and returns the parsed document.
-/// ```
-/// # use graphql_rs_native::language::parser::parse;
-/// # use graphql_rs_native::language::source::Source;
-/// let document = parse(Source::new("type User { id: ID }".to_string(), None, None));
-/// assert_eq!(document.definitions.len(), 1);
-/// ```
-pub fn parse(source: Source) -> Document {
-    let parse_result = document(CompleteByteSlice(source.body.as_bytes())).unwrap();
-    assert_eq!(parse_result.0.len(), 0);
-    parse_result.1
-}
-
-impl From<String> for Document {
-    fn from(string: String) -> Document {
-        Source::new(string, None, None).into()
-    }
-}
-
-impl From<Source> for Document {
-    fn from(source: Source) -> Document {
-        parse(source)
-    }
 }

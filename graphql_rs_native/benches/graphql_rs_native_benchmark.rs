@@ -10,7 +10,8 @@ use graphql_rs_native::language::source::Source;
 fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("parse simple", |b| {
         let source = Source::new(
-            std::iter::repeat("
+            std::iter::repeat(
+                "
             type Author {
                 id: Int!
                 firstName: String
@@ -37,7 +38,10 @@ fn criterion_benchmark(c: &mut Criterion) {
                 postId: Int!
                 ): Post
             }
-            ").take(1000).collect::<String>(),
+            ",
+            )
+            .take(1000)
+            .collect::<String>(),
             None,
             None,
         );
