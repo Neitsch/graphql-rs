@@ -8,7 +8,7 @@ use nom::{
     error::{ErrorKind, ParseError},
     error_position,
     multi::{many0, many1, separated_list, separated_nonempty_list},
-    sequence::{pair, preceded, separated_pair, terminated, delimited},
+    sequence::{delimited, pair, preceded, separated_pair, terminated},
     IResult,
 };
 
@@ -36,24 +36,26 @@ impl From<Source> for Document {
     }
 }
 
+fn is_alphanumeric_or_underscope(c: u8) -> bool {
+    is_alphanumeric(c) || c == b'_'
+}
+
+/// Consumes any form of whitespace until a different character occurs.
 fn sp1<'a, E: ParseError<&'a str>>(i: &'a str) -> IResult<&'a str, &'a str, E> {
     let chars = " \t\r\n f";
 
     take_while1(move |c| chars.contains(c))(i)
 }
 
-fn graphql_tag<'a, E: ParseError<&'a str>>(t: &'a str) -> impl Fn(&'a str) -> IResult<&'a str, &'a str, E> {
-    move |input: &'a str| {
-        delimited(
-            opt(sp1),
-            tag(t),
-            opt(sp1)
-        )(input)
-    }
+/// A special tag for lexical tokens with insignificant whitespaces
+fn graphql_tag<'a, E: ParseError<&'a str>>(
+    t: &'a str,
+) -> impl Fn(&'a str) -> IResult<&'a str, &'a str, E> {
+    move |input: &'a str| delimited(opt(sp1), tag(t), opt(sp1))(input)
 }
 
 fn name<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Name, E> {
-    take_while1(|c: char| is_alphanumeric(c as u8))(source).map(|(rest, string)| {
+    take_while1(|c: char| is_alphanumeric_or_underscope(c as u8))(source).map(|(rest, string)| {
         (
             rest,
             Name {
@@ -65,7 +67,8 @@ fn name<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Name, E
 }
 
 fn variable<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Variable, E> {
-    preceded(graphql_tag("$"), name)(source).map(|(rest, name)| (rest, Variable { loc: None, name }))
+    preceded(graphql_tag("$"), name)(source)
+        .map(|(rest, name)| (rest, Variable { loc: None, name }))
 }
 
 fn integer_part<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, &'a str, E> {
@@ -286,7 +289,9 @@ fn directive_locations<'a, E: ParseError<&'a str>>(
     preceded(
         opt(graphql_tag("|")),
         separated_list(graphql_tag("!"), move |input: &'a str| {
-            let (rest, loc) = peek(take_while1(|c: char| is_alphanumeric(c as u8)))(input)?;
+            let (rest, loc) = peek(take_while1(|c: char| {
+                is_alphanumeric_or_underscope(c as u8)
+            }))(input)?;
             match loc {
                 "QUERY"
                 | "MUTATION"
@@ -483,7 +488,10 @@ fn field_definition<'a, E: ParseError<&'a str>>(
 fn fields_definition<'a, E: ParseError<&'a str>>(
     source: &'a str,
 ) -> IResult<&'a str, Vec<FieldDefinition>, E> {
-    preceded(graphql_tag("{"), terminated(many0(field_definition), graphql_tag("}")))(source)
+    preceded(
+        graphql_tag("{"),
+        terminated(many0(field_definition), graphql_tag("}")),
+    )(source)
 }
 
 fn interface_definition<'a, E: ParseError<&'a str>>(
@@ -718,32 +726,15 @@ fn test_definition() {
 }
 
 fn document<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Document, E> {
-    preceded(opt(sp1), map(separated_nonempty_list(sp1, definition), |definitions| {
-        Document {
-            definitions: definitions,
-            loc: None,
-        }
-    }))(source)
-}
-
-#[test]
-fn my_test_doc() {
-    assert_eq!(
-        document::<(&str, ErrorKind)>("schema{}"),
-        Ok((
-            "",
+    preceded(
+        opt(sp1),
+        map(separated_nonempty_list(sp1, definition), |definitions| {
             Document {
+                definitions,
                 loc: None,
-                definitions: vec![Definition::TypeSystemDefinition(Box::new(
-                    TypeSystemDefinition::SchemaDefinition(Box::new(SchemaDefinition {
-                        loc: None,
-                        directives: None,
-                        operation_types: vec![],
-                    })),
-                )),]
             }
-        ))
-    )
+        }),
+    )(source)
 }
 
 #[test]
