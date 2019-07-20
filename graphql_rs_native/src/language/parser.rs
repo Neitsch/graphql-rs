@@ -2,12 +2,15 @@ use super::ast::*;
 use super::source::Source;
 use nom::{
     branch::alt,
-    bytes::complete::{tag, take_while, take_while1},
+    bytes::{
+        complete::{take_while, take_while1},
+        streaming::tag,
+    },
     character::{complete::one_of, is_alphanumeric, is_digit},
     combinator::{map, opt, peek, recognize},
     error::{ErrorKind, ParseError},
     error_position,
-    multi::{many0, many1, separated_list, separated_nonempty_list},
+    multi::{many0, many1, separated_list},
     sequence::{delimited, pair, preceded, separated_pair, terminated},
     IResult,
 };
@@ -20,8 +23,11 @@ use nom::{
 /// assert_eq!(document.definitions.len(), 1);
 /// ```
 pub fn parse(source: Source) -> Document {
-    let parse_result = document::<(&str, ErrorKind)>(&source.body).map_err(|e| panic!("{:?}", e));
-    parse_result.unwrap().1
+    let parse_result = document::<(&str, ErrorKind)>(&source.body)
+        .map_err(|e| panic!("{:?}", e))
+        .unwrap();
+    assert_eq!(parse_result.0.len(), 0);
+    parse_result.1
 }
 
 impl From<String> for Document {
@@ -42,9 +48,7 @@ fn is_alphanumeric_or_underscope(c: u8) -> bool {
 
 /// Consumes any form of whitespace until a different character occurs.
 fn sp1<'a, E: ParseError<&'a str>>(i: &'a str) -> IResult<&'a str, &'a str, E> {
-    let chars = " \t\r\n f";
-
-    take_while1(move |c| chars.contains(c))(i)
+    take_while1(move |c| " \t\r\n".contains(c))(i)
 }
 
 /// A special tag for lexical tokens with insignificant whitespaces
@@ -311,7 +315,7 @@ fn directive_locations<'a, E: ParseError<&'a str>>(
                 | "ENUM_VALUE"
                 | "INPUT_OBJECT"
                 | "INPUT_FIELD_DEFINITION" => name(loc).map(|(_, name)| (rest, name)),
-                _ => panic!("lol"),
+                _ => panic!("lol1"),
             }
         }),
     )(source)
@@ -394,8 +398,8 @@ fn argument_definition<'a, E: ParseError<&'a str>>(
     source: &'a str,
 ) -> IResult<&'a str, Vec<InputValueDefinition>, E> {
     preceded(
-        graphql_tag("{"),
-        terminated(many1(input_value_definition), graphql_tag("}")),
+        graphql_tag("("),
+        terminated(many1(input_value_definition), graphql_tag(")")),
     )(source)
 }
 
@@ -490,8 +494,91 @@ fn fields_definition<'a, E: ParseError<&'a str>>(
 ) -> IResult<&'a str, Vec<FieldDefinition>, E> {
     preceded(
         graphql_tag("{"),
-        terminated(many0(field_definition), graphql_tag("}")),
+        terminated(
+            many0(preceded(opt(sp1), field_definition)),
+            graphql_tag("}"),
+        ),
     )(source)
+}
+/*
+type Author {
+    id: Int!
+    firstName: String
+    lastName: String
+    posts: [Post]
+}
+*/
+#[test]
+fn test_fields_definition_x() {
+    assert_eq!(
+        fields_definition::<nom::error::VerboseError<&str>>("{f:S l:S }"),
+        Ok((
+            "",
+            vec![
+                FieldDefinition {
+                    loc: None,
+                    description: None,
+                    name: Name {
+                        loc: None,
+                        value: "f".to_string(),
+                    },
+                    arguments: None,
+                    _type: Type::NamedType(Box::new(NamedType {
+                        loc: None,
+                        name: Name {
+                            loc: None,
+                            value: "S".to_string(),
+                        },
+                    })),
+                    directives: None,
+                },
+                FieldDefinition {
+                    loc: None,
+                    description: None,
+                    name: Name {
+                        loc: None,
+                        value: "l".to_string(),
+                    },
+                    arguments: None,
+                    _type: Type::NamedType(Box::new(NamedType {
+                        loc: None,
+                        name: Name {
+                            loc: None,
+                            value: "S".to_string(),
+                        },
+                    })),
+                    directives: None,
+                },
+            ]
+        ))
+    );
+}
+
+#[test]
+fn test_fields_definition() {
+    assert_eq!(
+        fields_definition::<(&str, ErrorKind)>("{ id: ID }"),
+        Ok((
+            "",
+            vec![FieldDefinition {
+                loc: None,
+                description: None,
+                name: Name {
+                    loc: None,
+                    value: "id".to_string()
+                },
+                arguments: None,
+                _type: Type::NamedType(Box::new(NamedType {
+                    loc: None,
+                    name: Name {
+                        loc: None,
+                        value: "ID".to_string()
+                    }
+                })),
+                directives: None,
+            }]
+        ))
+    )
 }
 
 fn interface_definition<'a, E: ParseError<&'a str>>(
@@ -568,6 +655,43 @@ fn object_definition<'a, E: ParseError<&'a str>>(
     })
 }
 
+#[test]
+fn test_object_definition() {
+    assert_eq!(
+        object_definition::<(&str, ErrorKind)>("type User { id: ID }"),
+        Ok((
+            "",
+            ObjectTypeDefinition {
+                loc: None,
+                description: None,
+                name: Name {
+                    loc: None,
+                    value: "User".to_string(),
+                },
+                interfaces: None,
+                directives: None,
+                fields: Some(vec![FieldDefinition {
+                    loc: None,
+                    description: None,
+                    name: Name {
+                        loc: None,
+                        value: "id".to_string()
+                    },
+                    arguments: None,
+                    _type: Type::NamedType(Box::new(NamedType {
+                        loc: None,
+                        name: Name {
+                            loc: None,
+                            value: "ID".to_string()
+                        }
+                    })),
+                    directives: None,
+                }])
+            }
+        ))
+    );
+}
+
 fn type_definition<'a, E: ParseError<&'a str>>(
     source: &'a str,
 ) -> IResult<&'a str, TypeDefinition, E> {
@@ -609,7 +733,7 @@ fn type_definition<'a, E: ParseError<&'a str>>(
                 TypeDefinition::InputObjectTypeDefinition(Box::new(graphql_input)),
             )
         }),
-        _ => panic!("lol"),
+        _ => panic!("lol2"),
     }
 }
 
@@ -658,7 +782,7 @@ fn type_system_definition<'a, E: ParseError<&'a str>>(
 ) -> IResult<&'a str, TypeSystemDefinition, E> {
     let res: IResult<&'a str, &'a str, E> =
         peek(take_while1(|c: char| is_alphanumeric(c as u8)))(source);
-    let (rest, prefix) = res.unwrap_or_else(|_| panic!("lol"));
+    let (rest, prefix) = res.unwrap_or_else(|_| panic!("lol3"));
     match prefix {
         "schema" => schema_definition(rest)
             .map(|(rest, sd)| (rest, TypeSystemDefinition::SchemaDefinition(Box::new(sd)))),
@@ -693,19 +817,15 @@ fn test_type_system_definition() {
 }
 
 fn definition<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Definition, E> {
-    let res: IResult<&'a str, &'a str, E> =
-        peek(take_while1(|c: char| is_alphanumeric(c as u8)))(source);
-    let (rest, prefix) = res.unwrap_or_else(|_| panic!("lol"));
-    match prefix {
-        "schema" | "type" | "interface" | "scalar" | "union" | "enum" | "input" | "directive" => {
-            type_system_definition(rest)
-                .map(|(rest, tsd)| (rest, Definition::TypeSystemDefinition(Box::new(tsd))))
+    peek(take_while1(|c: char| is_alphanumeric(c as u8)))(source).and_then(|(rest, prefix)| {
+        match prefix {
+            "schema" | "type" | "interface" | "scalar" | "union" | "enum" | "input"
+            | "directive" => type_system_definition(rest)
+                .map(|(rest, tsd)| (rest, Definition::TypeSystemDefinition(Box::new(tsd)))),
+            _ => panic!("lol4"),
         }
-        _ => Err(nom::Err::Failure(error_position!(
-            source,
-            ErrorKind::TagBits
-        ))),
-    }
+
+    })
 }
 
 #[test]
@@ -728,11 +848,9 @@ fn test_definition() {
 fn document<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Document, E> {
     preceded(
         opt(sp1),
-        map(separated_nonempty_list(sp1, definition), |definitions| {
-            Document {
-                definitions,
-                loc: None,
-            }
+        map(many1(definition), |definitions| Document {
+            definitions,
+            loc: None,
         }),
     )(source)
 }
@@ -741,6 +859,102 @@ fn document<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Doc
 fn test_document_1() {
     assert_eq!(
         document::<(&str, ErrorKind)>("schema {}"),
+        Ok((
+            "",
+            Document {
+                loc: None,
+                definitions: vec![Definition::TypeSystemDefinition(Box::new(
+                    TypeSystemDefinition::SchemaDefinition(Box::new(SchemaDefinition {
+                        loc: None,
+                        directives: None,
+                        operation_types: vec![]
+                    }))
+                ))],
+            }
+        ))
+    );
+}
+
+#[test]
+fn test_document_3() {
+    assert_eq!(
+        document::<nom::error::VerboseError<&str>>(
+            "
+type Author {
+    id: Int!
+    firstName: String
+    lastName: String
+    posts: [Post]
+}
+
+type Post {
+    id: Int!
+    title: String
+    author: Author
+    votes: Int
+}
+
+type Query {
+    posts: [Post]
+    author(id: Int!): Author
+}
+
+type Mutation {
+    upvotePost (
+    postId: Int!
+    ): Post
+}
+        "
+        ),
+        Ok((
+            "",
+            Document {
+                loc: None,
+                definitions: vec![Definition::TypeSystemDefinition(Box::new(
+                    TypeSystemDefinition::SchemaDefinition(Box::new(SchemaDefinition {
+                        loc: None,
+                        directives: None,
+                        operation_types: vec![]
+                    }))
+                ))],
+            }
+        ))
+    );
+}
+
+#[test]
+fn test_document_2() {
+    assert_eq!(
+        document::<nom::error::VerboseError<&str>>(
+            "
+type Author {
+    id: Int!
+    firstName: String
+    lastName: String
+    posts: [Post]
+}
+
+type Post {
+    id: Int!
+    title: String
+    author: Author
+    votes: Int
+}
+
+# the schema allows the following query:
+type Query {
+    posts: [Post]
+    author(id: Int!): Author
+}
+
+# this schema allows the following mutation:
+type Mutation {
+    upvotePost (
+    postId: Int!
+    ): Post
+}
+        "
+        ),
         Ok((
             "",
             Document {
