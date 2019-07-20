@@ -3,7 +3,7 @@ use super::source::Source;
 use nom::{
     branch::alt,
     bytes::{
-        complete::{take_while, take_while1},
+        complete::{take_till, take_while, take_while1},
         streaming::tag,
     },
     character::{complete::one_of, is_alphanumeric, is_digit},
@@ -48,7 +48,29 @@ fn is_alphanumeric_or_underscope(c: u8) -> bool {
 
 /// Consumes any form of whitespace until a different character occurs.
 fn sp1<'a, E: ParseError<&'a str>>(i: &'a str) -> IResult<&'a str, &'a str, E> {
-    take_while1(move |c| " \t\r\n".contains(c))(i)
+    recognize(many1(alt((
+        map(take_while1(move |c| " \n\r\t".contains(c)), |_| ()),
+        map(
+            pair(
+                take_while1(move |c| "#".contains(c)),
+                take_till(move |c| "\n\r".contains(c)),
+            ),
+            |_| (),
+        ),
+    ))))(i)
+}
+
+#[test]
+fn sp1_1() {
+    assert_eq!(sp1::<nom::error::VerboseError<&str>>(" "), Ok(("", " ")));
+}
+
+#[test]
+fn sp1_2() {
+    assert_eq!(
+        sp1::<nom::error::VerboseError<&str>>(" a "),
+        Ok(("a ", " "))
+    );
 }
 
 /// A special tag for lexical tokens with insignificant whitespaces
@@ -186,7 +208,7 @@ fn argument<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Arg
 fn arguments<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Vec<Argument>, E> {
     preceded(
         graphql_tag("("),
-        terminated(separated_list(sp1, argument), graphql_tag(")")),
+        terminated(many0(preceded(opt(sp1), argument)), graphql_tag(")")),
     )(source)
 }
 
@@ -633,7 +655,7 @@ fn input_definition<'a, E: ParseError<&'a str>>(
 fn object_definition<'a, E: ParseError<&'a str>>(
     source: &'a str,
 ) -> IResult<&'a str, ObjectTypeDefinition, E> {
-    let (source, _) = terminated(tag("type"), sp1)(source)?;
+    let (source, _) = terminated(tag("type"), opt(sp1))(source)?;
     let (source, name_value) = name(source)?;
     let (source, implements_interfaces) = opt(move |input: &'a str| {
         let (rest, _) = tag("implements")(input)?;
@@ -859,53 +881,6 @@ fn document<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Doc
 fn test_document_1() {
     assert_eq!(
         document::<(&str, ErrorKind)>("schema {}"),
-        Ok((
-            "",
-            Document {
-                loc: None,
-                definitions: vec![Definition::TypeSystemDefinition(Box::new(
-                    TypeSystemDefinition::SchemaDefinition(Box::new(SchemaDefinition {
-                        loc: None,
-                        directives: None,
-                        operation_types: vec![]
-                    }))
-                ))],
-            }
-        ))
-    );
-}
-
-#[test]
-fn test_document_3() {
-    assert_eq!(
-        document::<nom::error::VerboseError<&str>>(
-            "
-type Author {
-    id: Int!
-    firstName: String
-    lastName: String
-    posts: [Post]
-}
-
-type Post {
-    id: Int!
-    title: String
-    author: Author
-    votes: Int
-}
-
-type Query {
-    posts: [Post]
-    author(id: Int!): Author
-}
-
-type Mutation {
-    upvotePost (
-    postId: Int!
-    ): Post
-}
-        "
-        ),
         Ok((
             "",
             Document {
