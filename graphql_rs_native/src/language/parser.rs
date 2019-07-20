@@ -81,20 +81,20 @@ fn graphql_tag<'a, E: ParseError<&'a str>>(
 }
 
 fn name<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Name, E> {
-    take_while1(|c: char| is_alphanumeric_or_underscope(c as u8))(source).map(|(rest, string)| {
-        (
-            rest,
-            Name {
-                loc: None,
-                value: string.to_string(),
-            },
-        )
-    })
+    map(
+        take_while1(|c: char| is_alphanumeric_or_underscope(c as u8)),
+        |string: &'a str| Name {
+            loc: None,
+            value: string.to_string(),
+        },
+    )(source)
 }
 
 fn variable<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Variable, E> {
-    preceded(graphql_tag("$"), name)(source)
-        .map(|(rest, name)| (rest, Variable { loc: None, name }))
+    map(preceded(graphql_tag("$"), name), |name| Variable {
+        loc: None,
+        name,
+    })(source)
 }
 
 fn integer_part<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, &'a str, E> {
@@ -116,23 +116,20 @@ fn exponential_part<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a 
 }
 
 fn float_value<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, FloatValue, E> {
-    recognize(preceded(
-        integer_part,
-        alt((
-            fractional_part,
-            exponential_part,
-            recognize(pair(fractional_part, exponential_part)),
+    map(
+        recognize(preceded(
+            integer_part,
+            alt((
+                fractional_part,
+                exponential_part,
+                recognize(pair(fractional_part, exponential_part)),
+            )),
         )),
-    ))(source)
-    .map(|(rest, res)| {
-        (
-            rest,
-            FloatValue {
-                loc: None,
-                value: res.to_string(),
-            },
-        )
-    })
+        |res| FloatValue {
+            loc: None,
+            value: res.to_string(),
+        },
+    )(source)
 }
 
 #[test]
@@ -150,15 +147,10 @@ fn test_float_value() {
 }
 
 fn int_value<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, IntValue, E> {
-    recognize(integer_part)(source).map(|(rest, val)| {
-        (
-            rest,
-            IntValue {
-                loc: None,
-                value: val.to_string(),
-            },
-        )
-    })
+    map(recognize(integer_part), |val| IntValue {
+        loc: None,
+        value: val.to_string(),
+    })(source)
 }
 /*
 named!(
@@ -177,32 +169,21 @@ named!(
 */
 fn value<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Value, E> {
     alt((
-        move |input: &'a str| {
-            let variable_res = variable(input);
-            variable_res.map(|(rest, v)| (rest, Value::Variable(Box::new(v))))
-        },
-        move |input: &'a str| {
-            let float_res = float_value(input);
-            float_res.map(|(rest, v)| (rest, Value::FloatValue(Box::new(v))))
-        },
-        move |input: &'a str| {
-            let int_res = int_value(input);
-            int_res.map(|(rest, v)| (rest, Value::IntValue(Box::new(v))))
-        },
+        map(variable, |v| Value::Variable(Box::new(v))),
+        map(float_value, |v| Value::FloatValue(Box::new(v))),
+        map(int_value, |v| Value::IntValue(Box::new(v))),
     ))(source)
 }
 
 fn argument<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Argument, E> {
-    separated_pair(name, graphql_tag(":"), value)(source).map(|(rest, (name, value))| {
-        (
-            rest,
-            Argument {
-                loc: None,
-                name,
-                value,
-            },
-        )
-    })
+    map(
+        separated_pair(name, graphql_tag(":"), value),
+        |(name, value)| Argument {
+            loc: None,
+            name,
+            value,
+        },
+    )(source)
 }
 
 fn arguments<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Vec<Argument>, E> {
@@ -213,18 +194,14 @@ fn arguments<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Ve
 }
 
 fn directive<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Directive, E> {
-    let rest = graphql_tag("@")(source)?.0;
-    let (rest, nam) = name(rest)?;
-    opt(arguments)(rest).map(|(rest, args)| {
-        (
-            rest,
-            Directive {
-                loc: None,
-                name: nam,
-                arguments: args,
-            },
-        )
-    })
+    map(
+        preceded(graphql_tag("@"), pair(name, opt(arguments))),
+        |(name, args)| Directive {
+            loc: None,
+            name: name,
+            arguments: args,
+        },
+    )(source)
 }
 
 fn directives<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Vec<Directive>, E> {
@@ -235,56 +212,49 @@ fn operation_type<'a, E: ParseError<&'a str>>(
     source: &'a str,
 ) -> IResult<&'a str, OperationType, E> {
     alt((
-        move |input: &'a str| tag("query")(input).map(|(rest, _)| (rest, OperationType::QUERY)),
-        move |input: &'a str| {
-            tag("mutation")(input).map(|(rest, _)| (rest, OperationType::MUTATION))
-        },
-        move |input: &'a str| {
-            tag("subscription")(input).map(|(rest, _)| (rest, OperationType::SUBSCRIPTION))
-        },
+        map(tag("query"), |_| OperationType::QUERY),
+        map(tag("mutation"), |_| OperationType::MUTATION),
+        map(tag("subscription"), |_| OperationType::SUBSCRIPTION),
     ))(source)
 }
 
 fn named_type<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, NamedType, E> {
-    name(source).map(|(rest, name)| (rest, NamedType { loc: None, name }))
+    map(name, |name| NamedType { loc: None, name })(source)
 }
 
 fn root_operation_type_definition<'a, E: ParseError<&'a str>>(
     source: &'a str,
 ) -> IResult<&'a str, OperationTypeDefinition, E> {
-    separated_pair(operation_type, graphql_tag(":"), named_type)(source).map(
-        |(rest, (operation, named_type))| {
-            (
-                rest,
-                OperationTypeDefinition {
-                    loc: None,
-                    operation,
-                    _type: named_type,
-                },
-            )
+    map(
+        separated_pair(operation_type, graphql_tag(":"), named_type),
+        |(operation, named_type)| OperationTypeDefinition {
+            loc: None,
+            operation,
+            _type: named_type,
         },
-    )
+    )(source)
 }
 
 fn schema_definition<'a, E: ParseError<&'a str>>(
     source: &'a str,
 ) -> IResult<&'a str, SchemaDefinition, E> {
-    let (source, _) = tag("schema")(source)?;
-    let (source, directives) = opt(directives)(source)?;
-    preceded(
-        graphql_tag("{"),
-        terminated(many0(root_operation_type_definition), graphql_tag("}")),
+    map(
+        preceded(
+            tag("schema"),
+            pair(
+                opt(directives),
+                preceded(
+                    graphql_tag("{"),
+                    terminated(many0(root_operation_type_definition), graphql_tag("}")),
+                ),
+            ),
+        ),
+        |(directives, operation_types)| SchemaDefinition {
+            loc: None,
+            directives,
+            operation_types,
+        },
     )(source)
-    .map(|(rest, operation_types)| {
-        (
-            rest,
-            SchemaDefinition {
-                loc: None,
-                directives,
-                operation_types,
-            },
-        )
-    })
 }
 
 #[test]
