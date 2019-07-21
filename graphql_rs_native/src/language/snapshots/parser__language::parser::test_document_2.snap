@@ -1,0 +1,518 @@
+---
+created: "2019-07-21T03:25:53.100590Z"
+creator: insta@0.8.2
+source: graphql_rs_native/src/language/parser.rs
+expression: "document::<(&str,\n            ErrorKind)>(\"\\ninput TestInput {\\n    id: Int!\\n}\\n\\ntype Author {\\n    id: Int!\\n    firstName: String\\n    lastName: String\\n    posts: [Post]\\n}\\n\\n\\\"\\\"\\\"\\nBlock comment\\n\\\"\\\"\\\"\\ntype Post {\\n    id: Int!\\n    title: String\\n    author: Author\\n    votes: Int\\n}\\n\\n# the schema allows the following query:\\ntype Query {\\n    posts: [Post]\\n    author(id: Int!): Author\\n}\\n\\n# this schema allows the following mutation:\\ntype Mutation {\\n    upvotePost (\\n    postId: Int!\\n    ): Post\\n}\\n\\n\\\"\\\"\\\"\\nCollaborators affiliation level with a subject.\\n\\\"\\\"\\\"\\nenum CollaboratorAffiliation {\\n  \\\"\\\"\\\"\\n  All collaborators the authenticated user can see.\\n  \\\"\\\"\\\"\\n  ALL\\n\\n  \\\"\\\"\\\"\\n  All collaborators with permissions to an organization-owned subject, regardless of organization membership status.\\n  \\\"\\\"\\\"\\n  DIRECT\\n\\n  \\\"\\\"\\\"\\n  All outside collaborators of an organization-owned subject.\\n  \\\"\\\"\\\"\\n  OUTSIDE\\n}\\n        \").unwrap_or_else(|_|\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    panic!(\"Test failed\"))"
+---
+[
+  "",
+  {
+    "kind": "Document",
+    "loc": null,
+    "definitions": [
+      {
+        "kind": "TypeSystemDefinition",
+        "kind": "TypeDefinition",
+        "kind": "InputObjectTypeDefinition",
+        "kind": "InputObjectTypeDefinition",
+        "loc": null,
+        "description": null,
+        "name": {
+          "kind": "Name",
+          "loc": null,
+          "value": "TestInput"
+        },
+        "directives": null,
+        "fields": [
+          {
+            "kind": "InputValueDefinition",
+            "loc": null,
+            "description": null,
+            "name": {
+              "kind": "Name",
+              "loc": null,
+              "value": "id"
+            },
+            "type": {
+              "kind": "NonNullType",
+              "kind": "NonNullType",
+              "loc": null,
+              "type": {
+                "kind": "NamedType",
+                "kind": "NamedType",
+                "loc": null,
+                "name": {
+                  "kind": "Name",
+                  "loc": null,
+                  "value": "Int"
+                }
+              }
+            },
+            "defaultValue": null,
+            "directives": null
+          }
+        ]
+      },
+      {
+        "kind": "TypeSystemDefinition",
+        "kind": "TypeDefinition",
+        "kind": "ObjectTypeDefinition",
+        "kind": "ObjectTypeDefinition",
+        "loc": null,
+        "description": null,
+        "name": {
+          "kind": "Name",
+          "loc": null,
+          "value": "Author"
+        },
+        "interfaces": null,
+        "directives": null,
+        "fields": [
+          {
+            "kind": "FieldDefinition",
+            "loc": null,
+            "description": null,
+            "name": {
+              "kind": "Name",
+              "loc": null,
+              "value": "id"
+            },
+            "arguments": null,
+            "type": {
+              "kind": "NonNullType",
+              "kind": "NonNullType",
+              "loc": null,
+              "type": {
+                "kind": "NamedType",
+                "kind": "NamedType",
+                "loc": null,
+                "name": {
+                  "kind": "Name",
+                  "loc": null,
+                  "value": "Int"
+                }
+              }
+            },
+            "directives": null
+          },
+          {
+            "kind": "FieldDefinition",
+            "loc": null,
+            "description": null,
+            "name": {
+              "kind": "Name",
+              "loc": null,
+              "value": "firstName"
+            },
+            "arguments": null,
+            "type": {
+              "kind": "NamedType",
+              "kind": "NamedType",
+              "loc": null,
+              "name": {
+                "kind": "Name",
+                "loc": null,
+                "value": "String"
+              }
+            },
+            "directives": null
+          },
+          {
+            "kind": "FieldDefinition",
+            "loc": null,
+            "description": null,
+            "name": {
+              "kind": "Name",
+              "loc": null,
+              "value": "lastName"
+            },
+            "arguments": null,
+            "type": {
+              "kind": "NamedType",
+              "kind": "NamedType",
+              "loc": null,
+              "name": {
+                "kind": "Name",
+                "loc": null,
+                "value": "String"
+              }
+            },
+            "directives": null
+          },
+          {
+            "kind": "FieldDefinition",
+            "loc": null,
+            "description": null,
+            "name": {
+              "kind": "Name",
+              "loc": null,
+              "value": "posts"
+            },
+            "arguments": null,
+            "type": {
+              "kind": "ListType",
+              "kind": "ListType",
+              "loc": null,
+              "type": {
+                "kind": "NamedType",
+                "kind": "NamedType",
+                "loc": null,
+                "name": {
+                  "kind": "Name",
+                  "loc": null,
+                  "value": "Post"
+                }
+              }
+            },
+            "directives": null
+          }
+        ]
+      },
+      {
+        "kind": "TypeSystemDefinition",
+        "kind": "TypeDefinition",
+        "kind": "ObjectTypeDefinition",
+        "kind": "ObjectTypeDefinition",
+        "loc": null,
+        "description": {
+          "kind": "StringValue",
+          "loc": null,
+          "value": "\nBlock comment\n",
+          "block": null
+        },
+        "name": {
+          "kind": "Name",
+          "loc": null,
+          "value": "Post"
+        },
+        "interfaces": null,
+        "directives": null,
+        "fields": [
+          {
+            "kind": "FieldDefinition",
+            "loc": null,
+            "description": null,
+            "name": {
+              "kind": "Name",
+              "loc": null,
+              "value": "id"
+            },
+            "arguments": null,
+            "type": {
+              "kind": "NonNullType",
+              "kind": "NonNullType",
+              "loc": null,
+              "type": {
+                "kind": "NamedType",
+                "kind": "NamedType",
+                "loc": null,
+                "name": {
+                  "kind": "Name",
+                  "loc": null,
+                  "value": "Int"
+                }
+              }
+            },
+            "directives": null
+          },
+          {
+            "kind": "FieldDefinition",
+            "loc": null,
+            "description": null,
+            "name": {
+              "kind": "Name",
+              "loc": null,
+              "value": "title"
+            },
+            "arguments": null,
+            "type": {
+              "kind": "NamedType",
+              "kind": "NamedType",
+              "loc": null,
+              "name": {
+                "kind": "Name",
+                "loc": null,
+                "value": "String"
+              }
+            },
+            "directives": null
+          },
+          {
+            "kind": "FieldDefinition",
+            "loc": null,
+            "description": null,
+            "name": {
+              "kind": "Name",
+              "loc": null,
+              "value": "author"
+            },
+            "arguments": null,
+            "type": {
+              "kind": "NamedType",
+              "kind": "NamedType",
+              "loc": null,
+              "name": {
+                "kind": "Name",
+                "loc": null,
+                "value": "Author"
+              }
+            },
+            "directives": null
+          },
+          {
+            "kind": "FieldDefinition",
+            "loc": null,
+            "description": null,
+            "name": {
+              "kind": "Name",
+              "loc": null,
+              "value": "votes"
+            },
+            "arguments": null,
+            "type": {
+              "kind": "NamedType",
+              "kind": "NamedType",
+              "loc": null,
+              "name": {
+                "kind": "Name",
+                "loc": null,
+                "value": "Int"
+              }
+            },
+            "directives": null
+          }
+        ]
+      },
+      {
+        "kind": "TypeSystemDefinition",
+        "kind": "TypeDefinition",
+        "kind": "ObjectTypeDefinition",
+        "kind": "ObjectTypeDefinition",
+        "loc": null,
+        "description": null,
+        "name": {
+          "kind": "Name",
+          "loc": null,
+          "value": "Query"
+        },
+        "interfaces": null,
+        "directives": null,
+        "fields": [
+          {
+            "kind": "FieldDefinition",
+            "loc": null,
+            "description": null,
+            "name": {
+              "kind": "Name",
+              "loc": null,
+              "value": "posts"
+            },
+            "arguments": null,
+            "type": {
+              "kind": "ListType",
+              "kind": "ListType",
+              "loc": null,
+              "type": {
+                "kind": "NamedType",
+                "kind": "NamedType",
+                "loc": null,
+                "name": {
+                  "kind": "Name",
+                  "loc": null,
+                  "value": "Post"
+                }
+              }
+            },
+            "directives": null
+          },
+          {
+            "kind": "FieldDefinition",
+            "loc": null,
+            "description": null,
+            "name": {
+              "kind": "Name",
+              "loc": null,
+              "value": "author"
+            },
+            "arguments": [
+              {
+                "kind": "InputValueDefinition",
+                "loc": null,
+                "description": null,
+                "name": {
+                  "kind": "Name",
+                  "loc": null,
+                  "value": "id"
+                },
+                "type": {
+                  "kind": "NonNullType",
+                  "kind": "NonNullType",
+                  "loc": null,
+                  "type": {
+                    "kind": "NamedType",
+                    "kind": "NamedType",
+                    "loc": null,
+                    "name": {
+                      "kind": "Name",
+                      "loc": null,
+                      "value": "Int"
+                    }
+                  }
+                },
+                "defaultValue": null,
+                "directives": null
+              }
+            ],
+            "type": {
+              "kind": "NamedType",
+              "kind": "NamedType",
+              "loc": null,
+              "name": {
+                "kind": "Name",
+                "loc": null,
+                "value": "Author"
+              }
+            },
+            "directives": null
+          }
+        ]
+      },
+      {
+        "kind": "TypeSystemDefinition",
+        "kind": "TypeDefinition",
+        "kind": "ObjectTypeDefinition",
+        "kind": "ObjectTypeDefinition",
+        "loc": null,
+        "description": null,
+        "name": {
+          "kind": "Name",
+          "loc": null,
+          "value": "Mutation"
+        },
+        "interfaces": null,
+        "directives": null,
+        "fields": [
+          {
+            "kind": "FieldDefinition",
+            "loc": null,
+            "description": null,
+            "name": {
+              "kind": "Name",
+              "loc": null,
+              "value": "upvotePost"
+            },
+            "arguments": [
+              {
+                "kind": "InputValueDefinition",
+                "loc": null,
+                "description": null,
+                "name": {
+                  "kind": "Name",
+                  "loc": null,
+                  "value": "postId"
+                },
+                "type": {
+                  "kind": "NonNullType",
+                  "kind": "NonNullType",
+                  "loc": null,
+                  "type": {
+                    "kind": "NamedType",
+                    "kind": "NamedType",
+                    "loc": null,
+                    "name": {
+                      "kind": "Name",
+                      "loc": null,
+                      "value": "Int"
+                    }
+                  }
+                },
+                "defaultValue": null,
+                "directives": null
+              }
+            ],
+            "type": {
+              "kind": "NamedType",
+              "kind": "NamedType",
+              "loc": null,
+              "name": {
+                "kind": "Name",
+                "loc": null,
+                "value": "Post"
+              }
+            },
+            "directives": null
+          }
+        ]
+      },
+      {
+        "kind": "TypeSystemDefinition",
+        "kind": "TypeDefinition",
+        "kind": "EnumTypeDefinition",
+        "kind": "EnumTypeDefinition",
+        "loc": null,
+        "description": {
+          "kind": "StringValue",
+          "loc": null,
+          "value": "\nCollaborators affiliation level with a subject.\n",
+          "block": null
+        },
+        "name": {
+          "kind": "Name",
+          "loc": null,
+          "value": "CollaboratorAffiliation"
+        },
+        "directives": null,
+        "values": [
+          {
+            "kind": "EnumValueDefinition",
+            "loc": null,
+            "description": {
+              "kind": "StringValue",
+              "loc": null,
+              "value": "\n  All collaborators the authenticated user can see.\n  ",
+              "block": null
+            },
+            "name": {
+              "kind": "Name",
+              "loc": null,
+              "value": "ALL"
+            },
+            "directives": null
+          },
+          {
+            "kind": "EnumValueDefinition",
+            "loc": null,
+            "description": {
+              "kind": "StringValue",
+              "loc": null,
+              "value": "\n  All collaborators with permissions to an organization-owned subject, regardless of organization membership status.\n  ",
+              "block": null
+            },
+            "name": {
+              "kind": "Name",
+              "loc": null,
+              "value": "DIRECT"
+            },
+            "directives": null
+          },
+          {
+            "kind": "EnumValueDefinition",
+            "loc": null,
+            "description": {
+              "kind": "StringValue",
+              "loc": null,
+              "value": "\n  All outside collaborators of an organization-owned subject.\n  ",
+              "block": null
+            },
+            "name": {
+              "kind": "Name",
+              "loc": null,
+              "value": "OUTSIDE"
+            },
+            "directives": null
+          }
+        ]
+      }
+    ]
+  }
+]
