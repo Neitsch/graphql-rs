@@ -1,8 +1,8 @@
 ---
-created: "2019-07-21T03:25:53.100590Z"
+created: "2019-07-21T13:53:00.079218Z"
 creator: insta@0.8.2
 source: graphql_rs_native/src/language/parser.rs
-expression: "document::<(&str,\n            ErrorKind)>(\"\\ninput TestInput {\\n    id: Int!\\n}\\n\\ntype Author {\\n    id: Int!\\n    firstName: String\\n    lastName: String\\n    posts: [Post]\\n}\\n\\n\\\"\\\"\\\"\\nBlock comment\\n\\\"\\\"\\\"\\ntype Post {\\n    id: Int!\\n    title: String\\n    author: Author\\n    votes: Int\\n}\\n\\n# the schema allows the following query:\\ntype Query {\\n    posts: [Post]\\n    author(id: Int!): Author\\n}\\n\\n# this schema allows the following mutation:\\ntype Mutation {\\n    upvotePost (\\n    postId: Int!\\n    ): Post\\n}\\n\\n\\\"\\\"\\\"\\nCollaborators affiliation level with a subject.\\n\\\"\\\"\\\"\\nenum CollaboratorAffiliation {\\n  \\\"\\\"\\\"\\n  All collaborators the authenticated user can see.\\n  \\\"\\\"\\\"\\n  ALL\\n\\n  \\\"\\\"\\\"\\n  All collaborators with permissions to an organization-owned subject, regardless of organization membership status.\\n  \\\"\\\"\\\"\\n  DIRECT\\n\\n  \\\"\\\"\\\"\\n  All outside collaborators of an organization-owned subject.\\n  \\\"\\\"\\\"\\n  OUTSIDE\\n}\\n        \").unwrap_or_else(|_|\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    panic!(\"Test failed\"))"
+expression: "document::<(&str,\n            ErrorKind)>(\"\\ninput TestInput {\\n    id: Int!\\n}\\n\\ntype Author {\\n    id: Int!\\n    firstName: String\\n    lastName: String\\n    posts: [Post]\\n}\\n\\n\\\"\\\"\\\"\\nBlock comment\\n\\\"\\\"\\\"\\ntype Post {\\n    id: Int!\\n    title: String\\n    author: Author\\n    votes: Int\\n}\\n\\n# the schema allows the following query:\\ntype Query {\\n    posts: [Post]\\n    author(id: Int!): Author\\n}\\n\\n# this schema allows the following mutation:\\ntype Mutation {\\n    upvotePost (\\n    postId: Int!\\n    orderBy: DeploymentOrder = { field: CREATED_AT direction: ASC }\\n    ): Post\\n}\\n\\n\\\"\\\"\\\"\\nCollaborators affiliation level with a subject.\\n\\\"\\\"\\\"\\nenum CollaboratorAffiliation {\\n  \\\"\\\"\\\"\\n  All collaborators the authenticated user can see.\\n  \\\"\\\"\\\"\\n  ALL\\n\\n  \\\"\\\"\\\"\\n  All collaborators with permissions to an organization-owned subject, regardless of organization membership status.\\n  \\\"\\\"\\\"\\n  DIRECT\\n\\n  \\\"\\\"\\\"\\n  All outside collaborators of an organization-owned subject.\\n  \\\"\\\"\\\"\\n  OUTSIDE\\n}\\n        \").unwrap_or_else(|_|\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         panic!(\"Test failed\"))"
 ---
 [
   "",
@@ -427,6 +427,64 @@ expression: "document::<(&str,\n            ErrorKind)>(\"\\ninput TestInput {\\
                   }
                 },
                 "defaultValue": null,
+                "directives": null
+              },
+              {
+                "kind": "InputValueDefinition",
+                "loc": null,
+                "description": null,
+                "name": {
+                  "kind": "Name",
+                  "loc": null,
+                  "value": "orderBy"
+                },
+                "type": {
+                  "kind": "NamedType",
+                  "kind": "NamedType",
+                  "loc": null,
+                  "name": {
+                    "kind": "Name",
+                    "loc": null,
+                    "value": "DeploymentOrder"
+                  }
+                },
+                "defaultValue": {
+                  "kind": "ObjectValue",
+                  "kind": "ObjectValue",
+                  "loc": null,
+                  "fields": [
+                    {
+                      "kind": "ObjectField",
+                      "loc": null,
+                      "name": {
+                        "kind": "Name",
+                        "loc": null,
+                        "value": "field"
+                      },
+                      "value": {
+                        "kind": "EnumValue",
+                        "kind": "EnumValue",
+                        "loc": null,
+                        "value": "CREATED_AT"
+                      }
+                    },
+                    {
+                      "kind": "ObjectField",
+                      "loc": null,
+                      "name": {
+                        "kind": "Name",
+                        "loc": null,
+                        "value": "direction"
+                      },
+                      "value": {
+                        "kind": "EnumValue",
+                        "kind": "EnumValue",
+                        "loc": null,
+                        "value": "ASC"
+                      }
+                    }
+                  ]
+                },
                 "directives": null
               }
             ],

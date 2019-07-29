@@ -203,7 +203,7 @@ fn list_value<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, L
             graphql_tag("]"),
         ),
         |v| ListValue {
-            values: v,
+            values: v.into(),
             loc: None,
         },
     )(source)
@@ -228,7 +228,7 @@ fn object_value<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str,
             graphql_tag("}"),
         ),
         |v| ObjectValue {
-            fields: v,
+            fields: v.into(),
             loc: None,
         },
     )(source)
@@ -345,8 +345,8 @@ fn directive<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Di
         preceded(graphql_tag("@"), pair(name, opt(arguments))),
         |(name, args)| Directive {
             loc: None,
-            name: name,
-            arguments: args,
+            name,
+            arguments: args.into(),
         },
     )(source)
 }
@@ -398,8 +398,8 @@ fn schema_definition<'a, E: ParseError<&'a str>>(
         ),
         |(directives, operation_types)| SchemaDefinition {
             loc: None,
-            directives,
-            operation_types,
+            directives: directives.into(),
+            operation_types: operation_types.into(),
         },
     )(source)
 }
@@ -418,9 +418,10 @@ fn test_schema_definition() {
                         value: "abc".to_string(),
                         loc: None
                     },
-                    arguments: None
-                }]),
-                operation_types: vec![]
+                    arguments: None.into()
+                }])
+                .into(),
+                operation_types: vec![].into()
             }
         ))
     );
@@ -515,11 +516,11 @@ fn input_value_definition<'a, E: ParseError<&'a str>>(
         )),
         |(desc, name, type_node, default_value, directives)| InputValueDefinition {
             loc: None,
-            description: desc,
+            description: desc.into(),
             name,
             _type: type_node,
-            default_value,
-            directives,
+            default_value: default_value.into(),
+            directives: directives.into(),
         },
     )(source)
 }
@@ -548,9 +549,9 @@ fn directive_definition<'a, E: ParseError<&'a str>>(
         )),
         |(desc, name, arguments, locations)| DirectiveDefinition {
             loc: None,
-            description: desc,
+            description: desc.into(),
             name,
-            arguments,
+            arguments: arguments.into(),
             locations,
         },
     )(source)
@@ -577,9 +578,9 @@ fn union_definition<'a, E: ParseError<&'a str>>(
         ),
         |(desc, name, directives, union_member_types)| UnionTypeDefinition {
             loc: None,
-            description: desc,
+            description: desc.into(),
             name,
-            directives,
+            directives: directives.into(),
             types: union_member_types,
         },
     )(source)
@@ -592,13 +593,13 @@ fn test_union_definition_1() {
         Ok((
             "x",
             UnionTypeDefinition {
-                description: None,
+                description: None.into(),
                 loc: None,
                 name: Name {
                     value: "MyUnion".to_string(),
                     loc: None,
                 },
-                directives: None,
+                directives: None.into(),
                 types: Some(vec![
                     NamedType {
                         loc: None,
@@ -631,9 +632,9 @@ fn scalar_definition<'a, E: ParseError<&'a str>>(
         )),
         |(desc, name, directives)| ScalarTypeDefinition {
             loc: None,
-            description: desc,
+            description: desc.into(),
             name,
-            directives,
+            directives: directives.into(),
         },
     )(source)
 }
@@ -651,11 +652,11 @@ fn field_definition<'a, E: ParseError<&'a str>>(
         )),
         |(desc, name, argument_definition, type_node, directives)| FieldDefinition {
             loc: None,
-            description: desc,
+            description: desc.into(),
             name,
-            arguments: argument_definition,
+            arguments: argument_definition.into(),
             _type: type_node,
-            directives,
+            directives: directives.into(),
         },
     )(source)
 }
@@ -681,12 +682,12 @@ fn test_fields_definition_x() {
             vec![
                 FieldDefinition {
                     loc: None,
-                    description: None,
+                    description: None.into(),
                     name: Name {
                         loc: None,
                         value: "f".to_string(),
                     },
-                    arguments: None,
+                    arguments: None.into(),
                     _type: Type::NamedType(Box::new(NamedType {
                         loc: None,
                         name: Name {
@@ -694,16 +695,16 @@ fn test_fields_definition_x() {
                             value: "S".to_string(),
                         },
                     })),
-                    directives: None,
+                    directives: None.into(),
                 },
                 FieldDefinition {
                     loc: None,
-                    description: None,
+                    description: None.into(),
                     name: Name {
                         loc: None,
                         value: "l".to_string(),
                     },
-                    arguments: None,
+                    arguments: None.into(),
                     _type: Type::NamedType(Box::new(NamedType {
                         loc: None,
                         name: Name {
@@ -711,7 +712,7 @@ fn test_fields_definition_x() {
                             value: "S".to_string(),
                         },
                     })),
-                    directives: None,
+                    directives: None.into(),
                 },
             ]
         ))
@@ -726,12 +727,12 @@ fn test_fields_definition() {
             "",
             vec![FieldDefinition {
                 loc: None,
-                description: None,
+                description: None.into(),
                 name: Name {
                     loc: None,
                     value: "id".to_string()
                 },
-                arguments: None,
+                arguments: None.into(),
                 _type: Type::NamedType(Box::new(NamedType {
                     loc: None,
                     name: Name {
@@ -739,7 +740,7 @@ fn test_fields_definition() {
                         value: "ID".to_string()
                     }
                 })),
-                directives: None,
+                directives: None.into(),
             }]
         ))
     )
@@ -757,10 +758,10 @@ fn interface_definition<'a, E: ParseError<&'a str>>(
         )),
         |(desc, name, directives, fd)| InterfaceTypeDefinition {
             loc: None,
-            description: desc,
+            description: desc.into(),
             name,
-            directives,
-            fields: fd,
+            directives: directives.into(),
+            fields: fd.into(),
         },
     )(source)
 }
@@ -789,10 +790,10 @@ fn input_definition<'a, E: ParseError<&'a str>>(
         )),
         |(desc, name, directives, ifd)| InputObjectTypeDefinition {
             loc: None,
-            description: desc,
+            description: desc.into(),
             name,
-            directives,
-            fields: ifd,
+            directives: directives.into(),
+            fields: ifd.into(),
         },
     )(source)
 }
@@ -816,11 +817,11 @@ fn object_definition<'a, E: ParseError<&'a str>>(
         )),
         |(desc, name_value, implements_interfaces, directives, fd)| ObjectTypeDefinition {
             loc: None,
-            description: desc,
+            description: desc.into(),
             name: name_value,
             interfaces: implements_interfaces,
-            directives,
-            fields: fd,
+            directives: directives.into(),
+            fields: fd.into(),
         },
     )(source)
 }
@@ -833,21 +834,21 @@ fn test_object_definition_1() {
             "",
             ObjectTypeDefinition {
                 loc: None,
-                description: None,
+                description: None.into(),
                 name: Name {
                     loc: None,
                     value: "User".to_string(),
                 },
                 interfaces: None,
-                directives: None,
+                directives: None.into(),
                 fields: Some(vec![FieldDefinition {
                     loc: None,
-                    description: None,
+                    description: None.into(),
                     name: Name {
                         loc: None,
                         value: "id".to_string()
                     },
-                    arguments: None,
+                    arguments: None.into(),
                     _type: Type::NamedType(Box::new(NamedType {
                         loc: None,
                         name: Name {
@@ -855,8 +856,9 @@ fn test_object_definition_1() {
                             value: "ID".to_string()
                         }
                     })),
-                    directives: None,
+                    directives: None.into(),
                 }])
+                .into()
             }
         ))
     );
@@ -870,14 +872,14 @@ fn test_object_definition_2() {
             "",
             ObjectTypeDefinition {
                 loc: None,
-                description: None,
+                description: None.into(),
                 name: Name {
                     loc: None,
                     value: "User".to_string(),
                 },
                 interfaces: None,
-                directives: None,
-                fields: None,
+                directives: None.into(),
+                fields: None.into(),
             }
         ))
     )
@@ -898,14 +900,15 @@ fn test_object_definition_3() {
                     value: "Comment".to_string(),
                     loc: None,
                     block: None
-                }),
+                })
+                .into(),
                 name: Name {
                     loc: None,
                     value: "User".to_string(),
                 },
                 interfaces: None,
-                directives: None,
-                fields: None,
+                directives: None.into(),
+                fields: None.into(),
             }
         ))
     )
@@ -944,13 +947,13 @@ fn test_type_definition_1() {
             "",
             TypeDefinition::InputObjectTypeDefinition(Box::new(InputObjectTypeDefinition {
                 loc: None,
-                description: None,
+                description: None.into(),
                 name: Name {
                     value: "User".to_string(),
                     loc: None
                 },
-                directives: None,
-                fields: None,
+                directives: None.into(),
+                fields: None.into(),
             }))
         ))
     )
@@ -977,9 +980,9 @@ fn enum_definition<'a, E: ParseError<&'a str>>(
                     ),
                     |(desc, n, d)| EnumValueDefinition {
                         loc: None,
-                        description: desc,
+                        description: desc.into(),
                         name: n,
-                        directives: d,
+                        directives: d.into(),
                     },
                 )),
                 graphql_tag("}"),
@@ -987,10 +990,10 @@ fn enum_definition<'a, E: ParseError<&'a str>>(
         )),
         |(desc, name_value, directives_value, values)| EnumTypeDefinition {
             loc: None,
-            description: desc,
+            description: desc.into(),
             name: name_value,
-            directives: directives_value,
-            values,
+            directives: directives_value.into(),
+            values: values.into(),
         },
     )(source)
 }
@@ -1019,8 +1022,8 @@ fn test_type_system_definition() {
             "",
             TypeSystemDefinition::SchemaDefinition(Box::new(SchemaDefinition {
                 loc: None,
-                directives: None,
-                operation_types: vec![]
+                directives: None.into(),
+                operation_types: vec![].into()
             }))
         ))
     );
@@ -1041,8 +1044,8 @@ fn test_definition() {
             Definition::TypeSystemDefinition(Box::new(TypeSystemDefinition::SchemaDefinition(
                 Box::new(SchemaDefinition {
                     loc: None,
-                    directives: None,
-                    operation_types: vec![]
+                    directives: None.into(),
+                    operation_types: vec![].into()
                 })
             )))
         ))
@@ -1053,7 +1056,7 @@ fn document<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Doc
     delimited(
         opt(sp1),
         map(many0(definition), |definitions| Document {
-            definitions,
+            definitions: definitions.into(),
             loc: None,
         }),
         opt(sp1),
@@ -1071,10 +1074,11 @@ fn test_document_1() {
                 definitions: vec![Definition::TypeSystemDefinition(Box::new(
                     TypeSystemDefinition::SchemaDefinition(Box::new(SchemaDefinition {
                         loc: None,
-                        directives: None,
-                        operation_types: vec![]
+                        directives: None.into(),
+                        operation_types: vec![].into()
                     }))
-                ))],
+                ))]
+                .into(),
             }
         ))
     );

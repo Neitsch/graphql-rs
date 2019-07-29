@@ -6,7 +6,6 @@
     bare_trait_objects,
     trivial_numeric_casts,
     unsafe_code,
-    unstable_features,
     unused_import_braces,
     unused_qualifications,
     unreachable_pub,
@@ -51,6 +50,7 @@
     while_true
 )]
 #![warn(rust_2018_idioms)]
+#![feature(box_patterns)]
 
 #[macro_use]
 extern crate serde_derive;
