@@ -26,6 +26,22 @@ pub fn parse(source: &Source) -> Document {
     parse_result.1
 }
 
+pub fn parse_value(source: &Source) -> Value {
+    let parse_result = value::<(&str, ErrorKind)>(&source.body)
+        .map_err(|e| panic!("{:?}", e))
+        .unwrap();
+    assert_eq!(parse_result.0.len(), 0);
+    parse_result.1
+}
+
+pub fn parse_type(source: &Source) -> Type {
+    let parse_result = type_node::<(&str, ErrorKind)>(&source.body)
+        .map_err(|e| panic!("{:?}", e))
+        .unwrap();
+    assert_eq!(parse_result.0.len(), 0);
+    parse_result.1
+}
+
 impl From<String> for Document {
     fn from(string: String) -> Document {
         Source::new(string, None, None).into()
