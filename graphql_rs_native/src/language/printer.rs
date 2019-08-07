@@ -7,10 +7,7 @@ pub fn print(node: AST<'_>) -> String {
 #[test]
 fn test_print_name() {
     assert_eq!(
-        print(AST::Name(&Name {
-            loc: None,
-            value: "TestName".to_string(),
-        })),
+        print(AST::Name(&Name::new("TestName".to_string()))),
         "TestName"
     )
 }
@@ -26,10 +23,7 @@ fn test_print_schema_definition() {
                 operation: OperationType::QUERY,
                 _type: NamedType {
                     loc: None,
-                    name: Name {
-                        loc: None,
-                        value: "QueryType".to_string(),
-                    }
+                    name: Name::new("QueryType".to_string())
                 }
             }]
             .into(),
@@ -46,41 +40,24 @@ fn test_print_operation_definition() {
         print(AST::OperationDefinition(&OperationDefinition {
             loc: None,
             operation: OperationType::QUERY,
-            name: Some(Name {
-                loc: None,
-                value: "MyQuery".to_string(),
-            })
-            .into(),
+            name: Some(Name::new("MyQuery".to_string())).into(),
             variable_definitions: None.into(),
             directives: Some(vec![Directive {
                 loc: None,
                 arguments: None.into(),
-                name: Name {
-                    loc: None,
-                    value: "dir".to_string(),
-                }
+                name: Name::new("dir".to_string()),
             }])
             .into(),
             selection_set: SelectionSet {
                 loc: None,
                 selections: vec![Selection::Field(Box::new(Field {
                     loc: None,
-                    alias: Some(Name {
-                        loc: None,
-                        value: "my_alias".to_string(),
-                    })
-                    .into(),
-                    name: Name {
-                        loc: None,
-                        value: "random_field".to_string(),
-                    },
+                    alias: Some(Name::new("my_alias".to_string())).into(),
+                    name: Name::new("random_field".to_string()),
                     arguments: Some(vec![
                         Argument {
                             loc: None,
-                            name: Name {
-                                loc: None,
-                                value: "arg1".to_string(),
-                            },
+                            name: Name::new("arg1".to_string()),
                             value: Value::StringValue(Box::new(StringValue {
                                 loc: None,
                                 value: "str".to_string(),
@@ -89,17 +66,10 @@ fn test_print_operation_definition() {
                         },
                         Argument {
                             loc: None,
-
-                            name: Name {
-                                loc: None,
-                                value: "arg2".to_string(),
-                            },
+                            name: Name::new("arg2".to_string()),
                             value: Value::Variable(Box::new(Variable {
                                 loc: None,
-                                name: Name {
-                                    loc: None,
-                                    value: "my_var".to_string(),
-                                }
+                                name: Name::new("my_var".to_string())
                             }))
                         }
                     ])

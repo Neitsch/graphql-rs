@@ -15,8 +15,32 @@ use nom::{
 /// ```
 /// # use graphql_rs_native::language::parser::parse;
 /// # use graphql_rs_native::language::source::Source;
+/// # use graphql_rs_native::language::ast::{
+/// #   Document, DefinitionVec, Definition, TypeSystemDefinition, TypeDefinition, NamedType,
+/// #   Description, Name, OptDirectiveVec, OptFieldDefinitionVec, ObjectTypeDefinition,
+/// #   OptInputValueDefinitionVec, FieldDefinition, FieldDefinitionVec, Type
+/// # };
 /// let document = parse(&Source::new("type User { id: ID }".to_string(), None, None));
-/// assert_eq!(document.definitions.len(), 1);
+/// assert_eq!(document, Document {
+///    loc: None,
+///    definitions: vec![
+///         TypeSystemDefinition::from(TypeDefinition::from(ObjectTypeDefinition{
+///             loc: None,
+///             description: None.into(),
+///             name: Name::new("User".to_string()),
+///             interfaces: None,
+///             directives: None.into(),
+///             fields: vec![FieldDefinition {
+///                 loc: None,
+///                 description: None.into(),
+///                 name: Name::new("id".into()),
+///                 arguments: None.into(),
+///                 _type: NamedType::from(Name::new("ID".into())).into(),
+///                 directives: None.into()
+///             }].into(),
+///         })).into()
+///    ].into()
+///});
 /// ```
 pub fn parse(source: &Source) -> Document {
     let parse_result = document::<(&str, ErrorKind)>(&source.body)
@@ -26,6 +50,14 @@ pub fn parse(source: &Source) -> Document {
     parse_result.1
 }
 
+/// Takes a graphql source representation and returns the parsed value node.
+/// ```
+/// # use graphql_rs_native::language::parser::parse_value;
+/// # use graphql_rs_native::language::source::Source;
+/// # use graphql_rs_native::language::ast::{NullValue, Value};
+/// let value_result = parse_value(&Source::new("NULL".to_string(), None, None));
+/// assert_eq!(value_result, Value::NullValue(Box::new(NullValue::default())));
+/// ```
 pub fn parse_value(source: &Source) -> Value {
     let parse_result = value::<(&str, ErrorKind)>(&source.body)
         .map_err(|e| panic!("{:?}", e))
@@ -34,6 +66,14 @@ pub fn parse_value(source: &Source) -> Value {
     parse_result.1
 }
 
+/// Takes a graphql source representation and returns the parsed type node.
+/// ```
+/// # use graphql_rs_native::language::parser::parse_type;
+/// # use graphql_rs_native::language::source::Source;
+/// # use graphql_rs_native::language::ast::{Type, NamedType, Name};
+/// let value_result = parse_type(&Source::new("Test".to_string(), None, None));
+/// assert_eq!(value_result, NamedType::from(Name::new("Test".into())).into());
+/// ```
 pub fn parse_type(source: &Source) -> Type {
     let parse_result = type_node::<(&str, ErrorKind)>(&source.body)
         .map_err(|e| panic!("{:?}", e))
@@ -72,19 +112,6 @@ fn sp1<'a, E: ParseError<&'a str>>(i: &'a str) -> IResult<&'a str, &'a str, E> {
     ))))(i)
 }
 
-#[test]
-fn sp1_1() {
-    assert_eq!(sp1::<nom::error::VerboseError<&str>>(" "), Ok(("", " ")));
-}
-
-#[test]
-fn sp1_2() {
-    assert_eq!(
-        sp1::<nom::error::VerboseError<&str>>(" a "),
-        Ok(("a ", " "))
-    );
-}
-
 /// A special tag for lexical tokens with insignificant whitespaces
 fn graphql_tag<'a, E: ParseError<&'a str>>(
     t: &'a str,
@@ -95,10 +122,7 @@ fn graphql_tag<'a, E: ParseError<&'a str>>(
 fn name<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Name, E> {
     map(
         take_while1(|c: char| is_alphanumeric_or_underscope(c as u8)),
-        |string: &'a str| Name {
-            loc: None,
-            value: string.to_string(),
-        },
+        |string: &'a str| Name::new(string.to_string()),
     )(source)
 }
 
@@ -146,20 +170,6 @@ fn float_value<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, 
             value: res.to_string(),
         },
     )(source)
-}
-
-#[test]
-fn test_float_value() {
-    assert_eq!(
-        float_value::<(&str, ErrorKind)>("1.1"),
-        Ok((
-            "",
-            FloatValue {
-                loc: None,
-                value: "1.1".to_string()
-            }
-        ))
-    );
 }
 
 fn int_value<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, IntValue, E> {
@@ -248,66 +258,6 @@ fn object_value<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str,
             loc: None,
         },
     )(source)
-}
-
-#[test]
-fn test_string_value_1() {
-    assert_eq!(
-        string_value::<(&str, ErrorKind)>("\"\" "),
-        Ok((
-            " ",
-            StringValue {
-                value: "".to_string(),
-                block: None,
-                loc: None,
-            }
-        ))
-    );
-}
-
-#[test]
-fn test_string_value_2() {
-    assert_eq!(
-        string_value::<(&str, ErrorKind)>("\"My test text\" "),
-        Ok((
-            " ",
-            StringValue {
-                value: "My test text".to_string(),
-                block: None,
-                loc: None,
-            }
-        ))
-    );
-}
-
-#[test]
-fn test_string_value_3() {
-    assert_eq!(
-        string_value::<(&str, ErrorKind)>("\"\"\" \"\"\" "),
-        Ok((
-            " ",
-            StringValue {
-                value: " ".to_string(),
-                block: None,
-                loc: None,
-            }
-        ))
-    );
-}
-
-#[test]
-fn test_string_value_4() {
-    assert_eq!(
-        string_value::<(&str, ErrorKind)>("\"\"\"My test text\"\"\" "),
-        Ok((
-            " ",
-            StringValue {
-                value: "My test text".to_string(),
-                block: None,
-                loc: None,
-            }
-        ))
-    );
 }
 /*
 named!(
@@ -418,29 +368,6 @@ fn schema_definition<'a, E: ParseError<&'a str>>(
             operation_types: operation_types.into(),
         },
     )(source)
-}
-
-#[test]
-fn test_schema_definition() {
-    assert_eq!(
-        schema_definition::<(&str, ErrorKind)>("schema @abc {}"),
-        Ok((
-            "",
-            SchemaDefinition {
-                loc: None,
-                directives: Some(vec![Directive {
-                    loc: None,
-                    name: Name {
-                        value: "abc".to_string(),
-                        loc: None
-                    },
-                    arguments: None.into()
-                }])
-                .into(),
-                operation_types: vec![].into()
-            }
-        ))
-    );
 }
 
 fn directive_locations<'a, E: ParseError<&'a str>>(
@@ -602,41 +529,6 @@ fn union_definition<'a, E: ParseError<&'a str>>(
     )(source)
 }
 
-#[test]
-fn test_union_definition_1() {
-    assert_eq!(
-        union_definition::<nom::error::VerboseError<&str>>("union MyUnion = MemberA | MemberB x"),
-        Ok((
-            "x",
-            UnionTypeDefinition {
-                description: None.into(),
-                loc: None,
-                name: Name {
-                    value: "MyUnion".to_string(),
-                    loc: None,
-                },
-                directives: None.into(),
-                types: Some(vec![
-                    NamedType {
-                        loc: None,
-                        name: Name {
-                            loc: None,
-                            value: "MemberA".to_string()
-                        }
-                    },
-                    NamedType {
-                        loc: None,
-                        name: Name {
-                            loc: None,
-                            value: "MemberB".to_string()
-                        }
-                    }
-                ])
-            },
-        ))
-    )
-}
-
 fn scalar_definition<'a, E: ParseError<&'a str>>(
     source: &'a str,
 ) -> IResult<&'a str, ScalarTypeDefinition, E> {
@@ -687,79 +579,6 @@ fn fields_definition<'a, E: ParseError<&'a str>>(
             graphql_tag("}"),
         ),
     )(source)
-}
-
-#[test]
-fn test_fields_definition_x() {
-    assert_eq!(
-        fields_definition::<nom::error::VerboseError<&str>>("{f:S l:S }"),
-        Ok((
-            "",
-            vec![
-                FieldDefinition {
-                    loc: None,
-                    description: None.into(),
-                    name: Name {
-                        loc: None,
-                        value: "f".to_string(),
-                    },
-                    arguments: None.into(),
-                    _type: Type::NamedType(Box::new(NamedType {
-                        loc: None,
-                        name: Name {
-                            loc: None,
-                            value: "S".to_string(),
-                        },
-                    })),
-                    directives: None.into(),
-                },
-                FieldDefinition {
-                    loc: None,
-                    description: None.into(),
-                    name: Name {
-                        loc: None,
-                        value: "l".to_string(),
-                    },
-                    arguments: None.into(),
-                    _type: Type::NamedType(Box::new(NamedType {
-                        loc: None,
-                        name: Name {
-                            loc: None,
-                            value: "S".to_string(),
-                        },
-                    })),
-                    directives: None.into(),
-                },
-            ]
-        ))
-    );
-}
-
-#[test]
-fn test_fields_definition() {
-    assert_eq!(
-        fields_definition::<(&str, ErrorKind)>("{ id: ID }"),
-        Ok((
-            "",
-            vec![FieldDefinition {
-                loc: None,
-                description: None.into(),
-                name: Name {
-                    loc: None,
-                    value: "id".to_string()
-                },
-                arguments: None.into(),
-                _type: Type::NamedType(Box::new(NamedType {
-                    loc: None,
-                    name: Name {
-                        loc: None,
-                        value: "ID".to_string()
-                    }
-                })),
-                directives: None.into(),
-            }]
-        ))
-    )
 }
 
 fn interface_definition<'a, E: ParseError<&'a str>>(
@@ -842,137 +661,17 @@ fn object_definition<'a, E: ParseError<&'a str>>(
     )(source)
 }
 
-#[test]
-fn test_object_definition_1() {
-    assert_eq!(
-        object_definition::<(&str, ErrorKind)>("type User { id: ID }"),
-        Ok((
-            "",
-            ObjectTypeDefinition {
-                loc: None,
-                description: None.into(),
-                name: Name {
-                    loc: None,
-                    value: "User".to_string(),
-                },
-                interfaces: None,
-                directives: None.into(),
-                fields: Some(vec![FieldDefinition {
-                    loc: None,
-                    description: None.into(),
-                    name: Name {
-                        loc: None,
-                        value: "id".to_string()
-                    },
-                    arguments: None.into(),
-                    _type: Type::NamedType(Box::new(NamedType {
-                        loc: None,
-                        name: Name {
-                            loc: None,
-                            value: "ID".to_string()
-                        }
-                    })),
-                    directives: None.into(),
-                }])
-                .into()
-            }
-        ))
-    );
-}
-
-#[test]
-fn test_object_definition_2() {
-    assert_eq!(
-        object_definition::<(&str, ErrorKind)>("type User"),
-        Ok((
-            "",
-            ObjectTypeDefinition {
-                loc: None,
-                description: None.into(),
-                name: Name {
-                    loc: None,
-                    value: "User".to_string(),
-                },
-                interfaces: None,
-                directives: None.into(),
-                fields: None.into(),
-            }
-        ))
-    )
-}
-
-#[test]
-fn test_object_definition_3() {
-    assert_eq!(
-        object_definition::<(&str, ErrorKind)>(
-            "\"\"\"Comment\"\"\"
-        type User"
-        ),
-        Ok((
-            "",
-            ObjectTypeDefinition {
-                loc: None,
-                description: Some(StringValue {
-                    value: "Comment".to_string(),
-                    loc: None,
-                    block: None
-                })
-                .into(),
-                name: Name {
-                    loc: None,
-                    value: "User".to_string(),
-                },
-                interfaces: None,
-                directives: None.into(),
-                fields: None.into(),
-            }
-        ))
-    )
-}
-
 fn type_definition<'a, E: ParseError<&'a str>>(
     source: &'a str,
 ) -> IResult<&'a str, TypeDefinition, E> {
     alt((
-        map(object_definition, |graphql_object| {
-            TypeDefinition::ObjectTypeDefinition(Box::new(graphql_object))
-        }),
-        map(interface_definition, |graphql_object| {
-            TypeDefinition::InterfaceTypeDefinition(Box::new(graphql_object))
-        }),
-        map(scalar_definition, |graphql_object| {
-            TypeDefinition::ScalarTypeDefinition(Box::new(graphql_object))
-        }),
-        map(union_definition, |graphql_object| {
-            TypeDefinition::UnionTypeDefinition(Box::new(graphql_object))
-        }),
-        map(enum_definition, |graphql_object| {
-            TypeDefinition::EnumTypeDefinition(Box::new(graphql_object))
-        }),
-        map(input_definition, |graphql_object| {
-            TypeDefinition::InputObjectTypeDefinition(Box::new(graphql_object))
-        }),
+        map(object_definition, |graphql_object| graphql_object.into()),
+        map(interface_definition, |graphql_object| graphql_object.into()),
+        map(scalar_definition, |graphql_object| graphql_object.into()),
+        map(union_definition, |graphql_object| graphql_object.into()),
+        map(enum_definition, |graphql_object| graphql_object.into()),
+        map(input_definition, |graphql_object| graphql_object.into()),
     ))(source)
-}
-
-#[test]
-fn test_type_definition_1() {
-    assert_eq!(
-        type_definition::<(&str, ErrorKind)>("input User"),
-        Ok((
-            "",
-            TypeDefinition::InputObjectTypeDefinition(Box::new(InputObjectTypeDefinition {
-                loc: None,
-                description: None.into(),
-                name: Name {
-                    value: "User".to_string(),
-                    loc: None
-                },
-                directives: None.into(),
-                fields: None.into(),
-            }))
-        ))
-    )
 }
 
 fn enum_definition<'a, E: ParseError<&'a str>>(
@@ -1018,54 +717,14 @@ fn type_system_definition<'a, E: ParseError<&'a str>>(
     source: &'a str,
 ) -> IResult<&'a str, TypeSystemDefinition, E> {
     alt((
-        map(schema_definition, |sd| {
-            TypeSystemDefinition::SchemaDefinition(Box::new(sd))
-        }),
-        map(directive_definition, |dd| {
-            TypeSystemDefinition::DirectiveDefinition(Box::new(dd))
-        }),
-        map(type_definition, |td| {
-            TypeSystemDefinition::TypeDefinition(Box::new(td))
-        }),
+        map(schema_definition, |sd| sd.into()),
+        map(directive_definition, |dd| dd.into()),
+        map(type_definition, |td| td.into()),
     ))(source)
 }
 
-#[test]
-fn test_type_system_definition() {
-    assert_eq!(
-        type_system_definition::<(&str, ErrorKind)>("schema {}"),
-        Ok((
-            "",
-            TypeSystemDefinition::SchemaDefinition(Box::new(SchemaDefinition {
-                loc: None,
-                directives: None.into(),
-                operation_types: vec![].into()
-            }))
-        ))
-    );
-}
-
 fn definition<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Definition, E> {
-    map(type_system_definition, |tsd| {
-        Definition::TypeSystemDefinition(Box::new(tsd))
-    })(source)
-}
-
-#[test]
-fn test_definition() {
-    assert_eq!(
-        definition::<(&str, ErrorKind)>("schema {}"),
-        Ok((
-            "",
-            Definition::TypeSystemDefinition(Box::new(TypeSystemDefinition::SchemaDefinition(
-                Box::new(SchemaDefinition {
-                    loc: None,
-                    directives: None.into(),
-                    operation_types: vec![].into()
-                })
-            )))
-        ))
-    );
+    map(type_system_definition, |tsd| tsd.into())(source)
 }
 
 fn document<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Document, E> {
@@ -1079,94 +738,410 @@ fn document<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Doc
     )(source)
 }
 
-#[test]
-fn test_document_1() {
-    assert_eq!(
-        document::<nom::error::VerboseError<&str>>("schema {}"),
-        Ok((
-            "",
-            Document {
-                loc: None,
-                definitions: vec![Definition::TypeSystemDefinition(Box::new(
-                    TypeSystemDefinition::SchemaDefinition(Box::new(SchemaDefinition {
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_fields_definition_x() {
+        assert_eq!(
+            fields_definition::<nom::error::VerboseError<&str>>("{f:S l:S }"),
+            Ok((
+                "",
+                vec![
+                    FieldDefinition {
                         loc: None,
+                        description: None.into(),
+                        name: Name::new("f".to_string()),
+                        arguments: None.into(),
+                        _type: Type::NamedType(Box::new(NamedType {
+                            loc: None,
+                            name: Name::new("S".to_string()),
+                        })),
                         directives: None.into(),
-                        operation_types: vec![].into()
-                    }))
-                ))]
-                .into(),
-            }
-        ))
-    );
-}
+                    },
+                    FieldDefinition {
+                        loc: None,
+                        description: None.into(),
+                        name: Name::new("l".to_string()),
+                        arguments: None.into(),
+                        _type: Type::NamedType(Box::new(NamedType {
+                            loc: None,
+                            name: Name::new("S".to_string()),
+                        })),
+                        directives: None.into(),
+                    },
+                ]
+            ))
+        );
+    }
 
-#[test]
-fn test_document_2() {
-    use insta::assert_json_snapshot_matches;
-    assert_json_snapshot_matches!(document::<(&str, ErrorKind)>(
-        "
-input TestInput {
-    id: Int!
-}
+    #[test]
+    fn test_fields_definition() {
+        assert_eq!(
+            fields_definition::<(&str, ErrorKind)>("{ id: ID }"),
+            Ok((
+                "",
+                vec![FieldDefinition {
+                    loc: None,
+                    description: None.into(),
+                    name: Name::new("id".to_string()),
+                    arguments: None.into(),
+                    _type: Type::NamedType(Box::new(NamedType {
+                        loc: None,
+                        name: Name::new("ID".to_string()),
+                    })),
+                    directives: None.into(),
+                }]
+            ))
+        )
+    }
 
-type Author {
-    id: Int!
-    firstName: String
-    lastName: String
-    posts: [Post]
-}
+    #[test]
+    fn test_union_definition_1() {
+        assert_eq!(
+            union_definition::<nom::error::VerboseError<&str>>(
+                "union MyUnion = MemberA | MemberB x"
+            ),
+            Ok((
+                "x",
+                UnionTypeDefinition {
+                    description: None.into(),
+                    loc: None,
+                    name: Name::new("MyUnion".to_string()),
+                    directives: None.into(),
+                    types: Some(vec![
+                        NamedType {
+                            loc: None,
+                            name: Name::new("MemberA".to_string())
+                        },
+                        NamedType {
+                            loc: None,
+                            name: Name::new("MemberB".to_string())
+                        }
+                    ])
+                },
+            ))
+        )
+    }
 
-\"\"\"
-Block comment
-\"\"\"
-type Post {
-    id: Int!
-    title: String
-    author: Author
-    votes: Int
-}
+    #[test]
+    fn test_schema_definition() {
+        assert_eq!(
+            schema_definition::<(&str, ErrorKind)>("schema @abc {}"),
+            Ok((
+                "",
+                SchemaDefinition {
+                    loc: None,
+                    directives: Some(vec![Directive {
+                        loc: None,
+                        name: Name::new("abc".to_string()),
+                        arguments: None.into()
+                    }])
+                    .into(),
+                    operation_types: vec![].into()
+                }
+            ))
+        );
+    }
 
-# the schema allows the following query:
-type Query {
-    posts: [Post]
-    author(id: Int!): Author
-}
+    #[test]
+    fn test_type_system_definition() {
+        assert_eq!(
+            type_system_definition::<(&str, ErrorKind)>("schema {}"),
+            Ok((
+                "",
+                TypeSystemDefinition::SchemaDefinition(Box::new(SchemaDefinition {
+                    loc: None,
+                    directives: None.into(),
+                    operation_types: vec![].into()
+                }))
+            ))
+        );
+    }
 
-# this schema allows the following mutation:
-type Mutation {
-    upvotePost (
-    postId: Int!
-    orderBy: DeploymentOrder = { field: CREATED_AT direction: ASC }
-    ): Post
-}
+    #[test]
+    fn test_float_value() {
+        assert_eq!(
+            float_value::<(&str, ErrorKind)>("1.1"),
+            Ok((
+                "",
+                FloatValue {
+                    loc: None,
+                    value: "1.1".to_string()
+                }
+            ))
+        );
+    }
 
-\"\"\"
-Collaborators affiliation level with a subject.
-\"\"\"
-enum CollaboratorAffiliation {
-  \"\"\"
-  All collaborators the authenticated user can see.
-  \"\"\"
-  ALL
+    #[test]
+    fn test_string_value_1() {
+        assert_eq!(
+            string_value::<(&str, ErrorKind)>("\"\" "),
+            Ok((
+                " ",
+                StringValue {
+                    value: "".to_string(),
+                    block: None,
+                    loc: None,
+                }
+            ))
+        );
+    }
 
-  \"\"\"
-  All collaborators with permissions to an organization-owned subject, regardless of organization membership status.
-  \"\"\"
-  DIRECT
+    #[test]
+    fn test_string_value_2() {
+        assert_eq!(
+            string_value::<(&str, ErrorKind)>("\"My test text\" "),
+            Ok((
+                " ",
+                StringValue {
+                    value: "My test text".to_string(),
+                    block: None,
+                    loc: None,
+                }
+            ))
+        );
+    }
 
-  \"\"\"
-  All outside collaborators of an organization-owned subject.
-  \"\"\"
-  OUTSIDE
-}
-        "
-    )
-    .unwrap_or_else(|_| panic!("Test failed")));
-}
+    #[test]
+    fn test_string_value_3() {
+        assert_eq!(
+            string_value::<(&str, ErrorKind)>("\"\"\" \"\"\" "),
+            Ok((
+                " ",
+                StringValue {
+                    value: " ".to_string(),
+                    block: None,
+                    loc: None,
+                }
+            ))
+        );
+    }
 
-#[test]
-fn test_document_3() {
-    use insta::assert_json_snapshot_matches;
-    assert_json_snapshot_matches!(document::<nom::error::VerboseError<&str>>("type User")
+    #[test]
+    fn test_string_value_4() {
+        assert_eq!(
+            string_value::<(&str, ErrorKind)>("\"\"\"My test text\"\"\" "),
+            Ok((
+                " ",
+                StringValue {
+                    value: "My test text".to_string(),
+                    block: None,
+                    loc: None,
+                }
+            ))
+        );
+    }
+    #[test]
+    fn sp1_1() {
+        assert_eq!(sp1::<nom::error::VerboseError<&str>>(" "), Ok(("", " ")));
+    }
+
+    #[test]
+    fn sp1_2() {
+        assert_eq!(
+            sp1::<nom::error::VerboseError<&str>>(" a "),
+            Ok(("a ", " "))
+        );
+    }
+
+    #[test]
+    fn test_object_definition_1() {
+        assert_eq!(
+            object_definition::<(&str, ErrorKind)>("type User { id: ID }"),
+            Ok((
+                "",
+                ObjectTypeDefinition {
+                    loc: None,
+                    description: None.into(),
+                    name: Name::new("User".to_string()),
+                    interfaces: None,
+                    directives: None.into(),
+                    fields: Some(vec![FieldDefinition {
+                        loc: None,
+                        description: None.into(),
+                        name: Name::new("id".to_string()),
+                        arguments: None.into(),
+                        _type: Type::NamedType(Box::new(NamedType {
+                            loc: None,
+                            name: Name::new("ID".to_string()),
+                        })),
+                        directives: None.into(),
+                    }])
+                    .into()
+                }
+            ))
+        );
+    }
+
+    #[test]
+    fn test_object_definition_2() {
+        assert_eq!(
+            object_definition::<(&str, ErrorKind)>("type User"),
+            Ok((
+                "",
+                ObjectTypeDefinition {
+                    loc: None,
+                    description: None.into(),
+                    name: Name::new("User".to_string()),
+                    interfaces: None,
+                    directives: None.into(),
+                    fields: None.into(),
+                }
+            ))
+        )
+    }
+
+    #[test]
+    fn test_object_definition_3() {
+        assert_eq!(
+            object_definition::<(&str, ErrorKind)>(
+                "\"\"\"Comment\"\"\"
+            type User"
+            ),
+            Ok((
+                "",
+                ObjectTypeDefinition {
+                    loc: None,
+                    description: Some(StringValue {
+                        value: "Comment".to_string(),
+                        loc: None,
+                        block: None
+                    })
+                    .into(),
+                    name: Name::new("User".to_string()),
+                    interfaces: None,
+                    directives: None.into(),
+                    fields: None.into(),
+                }
+            ))
+        )
+    }
+
+    #[test]
+    fn test_type_definition_1() {
+        assert_eq!(
+            type_definition::<(&str, ErrorKind)>("input User"),
+            Ok((
+                "",
+                TypeDefinition::InputObjectTypeDefinition(Box::new(InputObjectTypeDefinition {
+                    loc: None,
+                    description: None.into(),
+                    name: Name::new("User".into()),
+                    directives: None.into(),
+                    fields: None.into(),
+                }))
+            ))
+        )
+    }
+
+    #[test]
+    fn test_definition() {
+        assert_eq!(
+            definition::<(&str, ErrorKind)>("schema {}"),
+            Ok((
+                "",
+                TypeSystemDefinition::SchemaDefinition(Box::new(SchemaDefinition {
+                    loc: None,
+                    directives: None.into(),
+                    operation_types: vec![].into()
+                }))
+                .into()
+            ))
+        );
+    }
+
+    #[test]
+    fn test_document_1() {
+        assert_eq!(
+            document::<nom::error::VerboseError<&str>>("schema {}"),
+            Ok((
+                "",
+                Document {
+                    loc: None,
+                    definitions: vec![TypeSystemDefinition::SchemaDefinition(Box::new(
+                        SchemaDefinition {
+                            loc: None,
+                            directives: None.into(),
+                            operation_types: vec![].into()
+                        }
+                    ))
+                    .into()]
+                    .into(),
+                }
+            ))
+        );
+    }
+
+    #[test]
+    fn test_document_2() {
+        use insta::assert_json_snapshot_matches;
+        assert_json_snapshot_matches!(document::<(&str, ErrorKind)>(
+            "
+    input TestInput {
+        id: Int!
+    }
+
+    type Author {
+        id: Int!
+        firstName: String
+        lastName: String
+        posts: [Post]
+    }
+
+    \"\"\"
+    Block comment
+    \"\"\"
+    type Post {
+        id: Int!
+        title: String
+        author: Author
+        votes: Int
+    }
+
+    # the schema allows the following query:
+    type Query {
+        posts: [Post]
+        author(id: Int!): Author
+    }
+
+    # this schema allows the following mutation:
+    type Mutation {
+        upvotePost (
+        postId: Int!
+        orderBy: DeploymentOrder = { field: CREATED_AT direction: ASC }
+        ): Post
+    }
+
+    \"\"\"
+    Collaborators affiliation level with a subject.
+    \"\"\"
+    enum CollaboratorAffiliation {
+      \"\"\"
+      All collaborators the authenticated user can see.
+      \"\"\"
+      ALL
+
+      \"\"\"
+      All collaborators with permissions to an organization-owned subject, regardless of organization membership status.
+      \"\"\"
+      DIRECT
+
+      \"\"\"
+      All outside collaborators of an organization-owned subject.
+      \"\"\"
+      OUTSIDE
+    }
+            "
+        )
         .unwrap_or_else(|_| panic!("Test failed")));
+    }
+
+    #[test]
+    fn test_document_3() {
+        use insta::assert_json_snapshot_matches;
+        assert_json_snapshot_matches!(document::<nom::error::VerboseError<&str>>("type User")
+            .unwrap_or_else(|_| panic!("Test failed")));
+    }
 }

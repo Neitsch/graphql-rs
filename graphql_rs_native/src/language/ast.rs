@@ -117,8 +117,17 @@ impl<'a> fmt::Display for AST<'a> {
 #[serde(tag = "kind")]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Name {
-    pub loc: Option<Location>,
+    loc: Option<Location>,
     pub value: String,
+}
+
+impl Name {
+    pub fn new(name: String) -> Name {
+        Name {
+            loc: None,
+            value: name,
+        }
+    }
 }
 
 impl<'a> From<&'a Name> for AST<'a> {
@@ -199,9 +208,9 @@ pub struct DefinitionVec(pub Vec<Definition>);
 impl<'a> From<&'a Definition> for AST<'a> {
     fn from(def: &'a Definition) -> Self {
         match def {
-            Definition::ExecutableDefinition(box ed) => AST::from(ed),
-            Definition::TypeSystemDefinition(box tsd) => AST::from(tsd),
-            Definition::TypeSystemExtension(box tse) => AST::from(tse),
+            Definition::ExecutableDefinition(ed) => AST::from(ed),
+            Definition::TypeSystemDefinition(tsd) => AST::from(tsd),
+            Definition::TypeSystemExtension(tse) => AST::from(tse),
         }
     }
 }
@@ -249,6 +258,22 @@ impl core::ops::DerefMut for DefinitionVec {
     }
 }
 
+impl From<ExecutableDefinition> for Definition {
+    fn from(d: ExecutableDefinition) -> Self {
+        Definition::ExecutableDefinition(Box::new(d))
+    }
+}
+impl From<TypeSystemDefinition> for Definition {
+    fn from(d: TypeSystemDefinition) -> Self {
+        Definition::TypeSystemDefinition(Box::new(d))
+    }
+}
+impl From<TypeSystemExtension> for Definition {
+    fn from(d: TypeSystemExtension) -> Self {
+        Definition::TypeSystemExtension(Box::new(d))
+    }
+}
+
 #[serde(tag = "kind")]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ExecutableDefinition {
@@ -259,8 +284,8 @@ pub enum ExecutableDefinition {
 impl<'a> From<&'a ExecutableDefinition> for AST<'a> {
     fn from(ex: &'a ExecutableDefinition) -> Self {
         match ex {
-            ExecutableDefinition::OperationDefinition(box op) => AST::from(op),
-            ExecutableDefinition::FragmentDefinition(box fd) => AST::from(fd),
+            ExecutableDefinition::OperationDefinition(op) => AST::from(op),
+            ExecutableDefinition::FragmentDefinition(fd) => AST::from(fd),
         }
     }
 }
@@ -488,9 +513,9 @@ pub enum Selection {
 impl<'a> From<&'a Selection> for AST<'a> {
     fn from(s: &'a Selection) -> Self {
         match s {
-            Selection::Field(box f) => AST::from(f),
-            Selection::FragmentSpread(box fs) => AST::from(fs),
-            Selection::InlineFragment(box f) => AST::from(f),
+            Selection::Field(f) => AST::from(f),
+            Selection::FragmentSpread(fs) => AST::from(fs),
+            Selection::InlineFragment(f) => AST::from(f),
         }
     }
 }
@@ -498,9 +523,9 @@ impl<'a> From<&'a Selection> for AST<'a> {
 impl fmt::Display for Selection {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Selection::Field(box field) => write!(f, "{}", field),
-            Selection::FragmentSpread(box fs) => write!(f, "{}", fs),
-            Selection::InlineFragment(box frag) => write!(f, "{}", frag),
+            Selection::Field(field) => write!(f, "{}", field),
+            Selection::FragmentSpread(fs) => write!(f, "{}", fs),
+            Selection::InlineFragment(frag) => write!(f, "{}", frag),
         }
     }
 }
@@ -727,15 +752,15 @@ pub enum Value {
 impl<'a> From<&'a Value> for AST<'a> {
     fn from(v: &'a Value) -> Self {
         match v {
-            Value::Variable(box var) => AST::from(var),
-            Value::IntValue(box var) => AST::from(var),
-            Value::FloatValue(box var) => AST::from(var),
-            Value::StringValue(box var) => AST::from(var),
-            Value::BooleanValue(box var) => AST::from(var),
-            Value::NullValue(box var) => AST::from(var),
-            Value::EnumValue(box var) => AST::from(var),
-            Value::ListValue(box var) => AST::from(var),
-            Value::ObjectValue(box var) => AST::from(var),
+            Value::Variable(var) => AST::from(var),
+            Value::IntValue(var) => AST::from(var),
+            Value::FloatValue(var) => AST::from(var),
+            Value::StringValue(var) => AST::from(var),
+            Value::BooleanValue(var) => AST::from(var),
+            Value::NullValue(var) => AST::from(var),
+            Value::EnumValue(var) => AST::from(var),
+            Value::ListValue(var) => AST::from(var),
+            Value::ObjectValue(var) => AST::from(var),
         }
     }
 }
@@ -946,7 +971,7 @@ impl fmt::Display for BooleanValue {
 }
 
 #[serde(tag = "kind")]
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct NullValue {
     pub loc: Option<Location>,
 }
@@ -1181,9 +1206,9 @@ pub enum Type {
 impl<'a> From<&'a Type> for AST<'a> {
     fn from(t: &'a Type) -> Self {
         match t {
-            Type::NamedType(box nt) => AST::from(nt),
-            Type::ListType(box nt) => AST::from(nt),
-            Type::NonNullType(box nt) => AST::from(nt),
+            Type::NamedType(nt) => AST::from(nt),
+            Type::ListType(nt) => AST::from(nt),
+            Type::NonNullType(nt) => AST::from(nt),
         }
     }
 }
@@ -1195,6 +1220,22 @@ impl fmt::Display for Type {
             Type::ListType(t) => write!(f, "{}", t),
             Type::NonNullType(t) => write!(f, "{}", t),
         }
+    }
+}
+
+impl From<NamedType> for Type {
+    fn from(t: NamedType) -> Self {
+        Type::NamedType(Box::new(t))
+    }
+}
+impl From<ListType> for Type {
+    fn from(t: ListType) -> Self {
+        Type::ListType(Box::new(t))
+    }
+}
+impl From<NonNullType> for Type {
+    fn from(t: NonNullType) -> Self {
+        Type::NonNullType(Box::new(t))
     }
 }
 
@@ -1214,6 +1255,15 @@ impl<'a> From<&'a NamedType> for AST<'a> {
 impl fmt::Display for NamedType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.name)
+    }
+}
+
+impl From<Name> for NamedType {
+    fn from(n: Name) -> Self {
+        NamedType {
+            loc: n.loc.clone(),
+            name: n,
+        }
     }
 }
 
@@ -1279,8 +1329,8 @@ pub enum NonNullInnerType {
 impl<'a> From<&'a NonNullInnerType> for AST<'a> {
     fn from(nnt: &'a NonNullInnerType) -> Self {
         match &nnt {
-            NonNullInnerType::NamedType(box nt) => AST::from(nt),
-            NonNullInnerType::ListType(box lt) => AST::from(lt),
+            NonNullInnerType::NamedType(nt) => AST::from(nt),
+            NonNullInnerType::ListType(lt) => AST::from(lt),
         }
     }
 }
@@ -1288,8 +1338,8 @@ impl<'a> From<&'a NonNullInnerType> for AST<'a> {
 impl fmt::Display for NonNullInnerType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            NonNullInnerType::NamedType(box nt) => write!(f, "{}", nt),
-            NonNullInnerType::ListType(box lt) => write!(f, "{}", lt),
+            NonNullInnerType::NamedType(nt) => write!(f, "{}", nt),
+            NonNullInnerType::ListType(lt) => write!(f, "{}", lt),
         }
     }
 }
@@ -1326,9 +1376,9 @@ pub enum TypeSystemDefinition {
 impl<'a> From<&'a TypeSystemDefinition> for AST<'a> {
     fn from(s: &'a TypeSystemDefinition) -> Self {
         match s {
-            TypeSystemDefinition::SchemaDefinition(box sd) => AST::from(sd),
-            TypeSystemDefinition::TypeDefinition(box td) => AST::from(td),
-            TypeSystemDefinition::DirectiveDefinition(box dd) => AST::from(dd),
+            TypeSystemDefinition::SchemaDefinition(sd) => AST::from(sd),
+            TypeSystemDefinition::TypeDefinition(td) => AST::from(td),
+            TypeSystemDefinition::DirectiveDefinition(dd) => AST::from(dd),
         }
     }
 }
@@ -1340,6 +1390,24 @@ impl fmt::Display for TypeSystemDefinition {
             TypeSystemDefinition::TypeDefinition(td) => write!(f, "{}", td),
             TypeSystemDefinition::DirectiveDefinition(dd) => write!(f, "{}", dd),
         }
+    }
+}
+
+impl From<SchemaDefinition> for TypeSystemDefinition {
+    fn from(s: SchemaDefinition) -> Self {
+        TypeSystemDefinition::SchemaDefinition(Box::new(s))
+    }
+}
+
+impl From<TypeDefinition> for TypeSystemDefinition {
+    fn from(s: TypeDefinition) -> Self {
+        TypeSystemDefinition::TypeDefinition(Box::new(s))
+    }
+}
+
+impl From<DirectiveDefinition> for TypeSystemDefinition {
+    fn from(s: DirectiveDefinition) -> Self {
+        TypeSystemDefinition::DirectiveDefinition(Box::new(s))
     }
 }
 
@@ -1475,15 +1543,51 @@ pub enum TypeDefinition {
     InputObjectTypeDefinition(Box<InputObjectTypeDefinition>),
 }
 
+impl From<ScalarTypeDefinition> for TypeDefinition {
+    fn from(d: ScalarTypeDefinition) -> Self {
+        TypeDefinition::ScalarTypeDefinition(Box::new(d))
+    }
+}
+
+impl From<ObjectTypeDefinition> for TypeDefinition {
+    fn from(d: ObjectTypeDefinition) -> Self {
+        TypeDefinition::ObjectTypeDefinition(Box::new(d))
+    }
+}
+
+impl From<InterfaceTypeDefinition> for TypeDefinition {
+    fn from(d: InterfaceTypeDefinition) -> Self {
+        TypeDefinition::InterfaceTypeDefinition(Box::new(d))
+    }
+}
+
+impl From<UnionTypeDefinition> for TypeDefinition {
+    fn from(d: UnionTypeDefinition) -> Self {
+        TypeDefinition::UnionTypeDefinition(Box::new(d))
+    }
+}
+
+impl From<EnumTypeDefinition> for TypeDefinition {
+    fn from(d: EnumTypeDefinition) -> Self {
+        TypeDefinition::EnumTypeDefinition(Box::new(d))
+    }
+}
+
+impl From<InputObjectTypeDefinition> for TypeDefinition {
+    fn from(d: InputObjectTypeDefinition) -> Self {
+        TypeDefinition::InputObjectTypeDefinition(Box::new(d))
+    }
+}
+
 impl<'a> From<&'a TypeDefinition> for AST<'a> {
     fn from(s: &'a TypeDefinition) -> Self {
         match s {
-            TypeDefinition::ScalarTypeDefinition(box std) => AST::from(std),
-            TypeDefinition::ObjectTypeDefinition(box std) => AST::from(std),
-            TypeDefinition::InterfaceTypeDefinition(box std) => AST::from(std),
-            TypeDefinition::UnionTypeDefinition(box std) => AST::from(std),
-            TypeDefinition::EnumTypeDefinition(box std) => AST::from(std),
-            TypeDefinition::InputObjectTypeDefinition(box std) => AST::from(std),
+            TypeDefinition::ScalarTypeDefinition(std) => AST::from(std),
+            TypeDefinition::ObjectTypeDefinition(std) => AST::from(std),
+            TypeDefinition::InterfaceTypeDefinition(std) => AST::from(std),
+            TypeDefinition::UnionTypeDefinition(std) => AST::from(std),
+            TypeDefinition::EnumTypeDefinition(std) => AST::from(std),
+            TypeDefinition::InputObjectTypeDefinition(std) => AST::from(std),
         }
     }
 }
@@ -1491,12 +1595,12 @@ impl<'a> From<&'a TypeDefinition> for AST<'a> {
 impl fmt::Display for TypeDefinition {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            TypeDefinition::ScalarTypeDefinition(box std) => write!(f, "{}", std),
-            TypeDefinition::ObjectTypeDefinition(box std) => write!(f, "{}", std),
-            TypeDefinition::InterfaceTypeDefinition(box std) => write!(f, "{}", std),
-            TypeDefinition::UnionTypeDefinition(box std) => write!(f, "{}", std),
-            TypeDefinition::EnumTypeDefinition(box std) => write!(f, "{}", std),
-            TypeDefinition::InputObjectTypeDefinition(box std) => write!(f, "{}", std),
+            TypeDefinition::ScalarTypeDefinition(std) => write!(f, "{}", std),
+            TypeDefinition::ObjectTypeDefinition(std) => write!(f, "{}", std),
+            TypeDefinition::InterfaceTypeDefinition(std) => write!(f, "{}", std),
+            TypeDefinition::UnionTypeDefinition(std) => write!(f, "{}", std),
+            TypeDefinition::EnumTypeDefinition(std) => write!(f, "{}", std),
+            TypeDefinition::InputObjectTypeDefinition(std) => write!(f, "{}", std),
         }
     }
 }
@@ -1625,7 +1729,7 @@ impl core::ops::DerefMut for FieldDefinitionVec {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct OptFieldDefinitionVec(pub Option<FieldDefinitionVec>);
 
 impl From<Option<Vec<FieldDefinition>>> for OptFieldDefinitionVec {
@@ -1654,6 +1758,12 @@ impl core::ops::Deref for OptFieldDefinitionVec {
 impl core::ops::DerefMut for OptFieldDefinitionVec {
     fn deref_mut(self: &'_ mut Self) -> &'_ mut Self::Target {
         &mut self.0
+    }
+}
+
+impl From<Vec<FieldDefinition>> for OptFieldDefinitionVec {
+    fn from(v: Vec<FieldDefinition>) -> Self {
+        Some(v).into()
     }
 }
 
@@ -2000,8 +2110,8 @@ pub enum TypeSystemExtension {
 impl<'a> From<&'a TypeSystemExtension> for AST<'a> {
     fn from(s: &'a TypeSystemExtension) -> Self {
         match s {
-            TypeSystemExtension::SchemaExtension(box se) => AST::from(se),
-            TypeSystemExtension::TypeExtension(box te) => AST::from(te),
+            TypeSystemExtension::SchemaExtension(se) => AST::from(se),
+            TypeSystemExtension::TypeExtension(te) => AST::from(te),
         }
     }
 }
@@ -2009,8 +2119,8 @@ impl<'a> From<&'a TypeSystemExtension> for AST<'a> {
 impl fmt::Display for TypeSystemExtension {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            TypeSystemExtension::SchemaExtension(box se) => write!(f, "{}", se),
-            TypeSystemExtension::TypeExtension(box te) => write!(f, "{}", te),
+            TypeSystemExtension::SchemaExtension(se) => write!(f, "{}", se),
+            TypeSystemExtension::TypeExtension(te) => write!(f, "{}", te),
         }
     }
 }
@@ -2055,12 +2165,12 @@ pub enum TypeExtension {
 impl<'a> From<&'a TypeExtension> for AST<'a> {
     fn from(s: &'a TypeExtension) -> Self {
         match s {
-            TypeExtension::ScalarTypeExtension(box v) => AST::from(v),
-            TypeExtension::ObjectTypeExtension(box v) => AST::from(v),
-            TypeExtension::InterfaceTypeExtension(box v) => AST::from(v),
-            TypeExtension::UnionTypeExtension(box v) => AST::from(v),
-            TypeExtension::EnumTypeExtension(box v) => AST::from(v),
-            TypeExtension::InputObjectTypeExtension(box v) => AST::from(v),
+            TypeExtension::ScalarTypeExtension(v) => AST::from(v),
+            TypeExtension::ObjectTypeExtension(v) => AST::from(v),
+            TypeExtension::InterfaceTypeExtension(v) => AST::from(v),
+            TypeExtension::UnionTypeExtension(v) => AST::from(v),
+            TypeExtension::EnumTypeExtension(v) => AST::from(v),
+            TypeExtension::InputObjectTypeExtension(v) => AST::from(v),
         }
     }
 }
@@ -2068,12 +2178,12 @@ impl<'a> From<&'a TypeExtension> for AST<'a> {
 impl fmt::Display for TypeExtension {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            TypeExtension::ScalarTypeExtension(box v) => write!(f, "{}", v),
-            TypeExtension::ObjectTypeExtension(box v) => write!(f, "{}", v),
-            TypeExtension::InterfaceTypeExtension(box v) => write!(f, "{}", v),
-            TypeExtension::UnionTypeExtension(box v) => write!(f, "{}", v),
-            TypeExtension::EnumTypeExtension(box v) => write!(f, "{}", v),
-            TypeExtension::InputObjectTypeExtension(box v) => write!(f, "{}", v),
+            TypeExtension::ScalarTypeExtension(v) => write!(f, "{}", v),
+            TypeExtension::ObjectTypeExtension(v) => write!(f, "{}", v),
+            TypeExtension::InterfaceTypeExtension(v) => write!(f, "{}", v),
+            TypeExtension::UnionTypeExtension(v) => write!(f, "{}", v),
+            TypeExtension::EnumTypeExtension(v) => write!(f, "{}", v),
+            TypeExtension::InputObjectTypeExtension(v) => write!(f, "{}", v),
         }
     }
 }
@@ -2249,5 +2359,11 @@ impl fmt::Display for InputObjectTypeExtension {
             "extend input {}{}{}",
             self.name, self.directives, self.fields
         )
+    }
+}
+
+impl<'a, T> From<&'a Box<T>> for AST<'a> {
+    fn from(_s: &'a Box<T>) -> Self {
+        panic!("hi")
     }
 }

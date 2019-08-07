@@ -50,7 +50,6 @@
     while_true
 )]
 #![warn(rust_2018_idioms)]
-#![feature(box_patterns)]
 
 #[macro_use]
 extern crate serde_derive;
