@@ -1,0 +1,57 @@
+---
+created: "2019-08-11T13:12:11.414702Z"
+creator: insta@0.8.2
+source: graphql_rs_native/src/language/parser.rs
+expression: "object_definition::<(&str,\n                     ErrorKind)>(&source)(&source.body).unwrap_or_else(|_|\n                                                                           panic!(\"Test failed\"))"
+---
+[
+  "",
+  {
+    "kind": "ObjectTypeDefinition",
+    "loc": {
+      "start": 0,
+      "end": 35,
+      "source": {
+        "name": "GraphQL Request",
+        "locationOffset": {
+          "line": 1,
+          "column": 1
+        }
+      }
+    },
+    "description": {
+      "kind": "StringValue",
+      "loc": {
+        "start": 0,
+        "end": 13,
+        "source": {
+          "name": "GraphQL Request",
+          "locationOffset": {
+            "line": 1,
+            "column": 1
+          }
+        }
+      },
+      "value": "Comment",
+      "block": null
+    },
+    "name": {
+      "kind": "Name",
+      "loc": {
+        "start": 31,
+        "end": 35,
+        "source": {
+          "name": "GraphQL Request",
+          "locationOffset": {
+            "line": 1,
+            "column": 1
+          }
+        }
+      },
+      "value": "User"
+    },
+    "interfaces": null,
+    "directives": null,
+    "fields": null
+  }
+]

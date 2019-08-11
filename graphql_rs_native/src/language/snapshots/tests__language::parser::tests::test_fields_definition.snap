@@ -1,0 +1,73 @@
+---
+created: "2019-08-11T13:12:11.347323Z"
+creator: insta@0.8.2
+source: graphql_rs_native/src/language/parser.rs
+expression: "fields_definition::<(&str,\n                     ErrorKind)>(&source)(&source.body).unwrap_or_else(|_|\n                                                                           panic!(\"Test failed\"))"
+---
+[
+  "",
+  [
+    {
+      "kind": "FieldDefinition",
+      "loc": {
+        "start": 2,
+        "end": 8,
+        "source": {
+          "name": "GraphQL Request",
+          "locationOffset": {
+            "line": 1,
+            "column": 1
+          }
+        }
+      },
+      "description": null,
+      "name": {
+        "kind": "Name",
+        "loc": {
+          "start": 2,
+          "end": 4,
+          "source": {
+            "name": "GraphQL Request",
+            "locationOffset": {
+              "line": 1,
+              "column": 1
+            }
+          }
+        },
+        "value": "id"
+      },
+      "arguments": null,
+      "type": {
+        "kind": "NamedType",
+        "kind": "NamedType",
+        "loc": {
+          "start": 6,
+          "end": 8,
+          "source": {
+            "name": "GraphQL Request",
+            "locationOffset": {
+              "line": 1,
+              "column": 1
+            }
+          }
+        },
+        "name": {
+          "kind": "Name",
+          "loc": {
+            "start": 6,
+            "end": 8,
+            "source": {
+              "name": "GraphQL Request",
+              "locationOffset": {
+                "line": 1,
+                "column": 1
+              }
+            }
+          },
+          "value": "ID"
+        }
+      },
+      "directives": null
+    }
+  ]
+]

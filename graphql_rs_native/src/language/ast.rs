@@ -132,9 +132,9 @@ pub struct Name {
 }
 
 impl Name {
-    pub fn new(name: String) -> Name {
+    pub fn new(name: String, loc: Location) -> Name {
         Name {
-            loc: None,
+            loc: Some(loc),
             value: name,
         }
     }
@@ -632,7 +632,7 @@ pub struct OptArgumentVec(pub Option<ArgumentVec>);
 
 impl From<Option<Vec<Argument>>> for OptArgumentVec {
     fn from(d: Option<Vec<Argument>>) -> Self {
-        OptArgumentVec(d.map(|v| v.into()))
+        OptArgumentVec(d.map(std::convert::Into::into))
     }
 }
 
@@ -1177,7 +1177,7 @@ pub struct OptDirectiveVec(pub Option<DirectiveVec>);
 
 impl From<Option<Vec<Directive>>> for OptDirectiveVec {
     fn from(d: Option<Vec<Directive>>) -> Self {
-        OptDirectiveVec(d.map(|v| v.into()))
+        OptDirectiveVec(d.map(std::convert::Into::into))
     }
 }
 
@@ -1443,7 +1443,7 @@ impl fmt::Display for SchemaDefinition {
             f,
             "schema{} {{{}\n}}",
             self.directives,
-            if ot_formatter.len() == 0 {
+            if ot_formatter.is_empty() {
                 ot_formatter
             } else {
                 ot_formatter.replace("\n", "\n  ")
@@ -1514,7 +1514,7 @@ pub struct OptOperationTypeDefinitionVec(pub Option<OperationTypeDefinitionVec>)
 
 impl From<Option<Vec<OperationTypeDefinition>>> for OptOperationTypeDefinitionVec {
     fn from(d: Option<Vec<OperationTypeDefinition>>) -> Self {
-        OptOperationTypeDefinitionVec(d.map(|v| v.into()))
+        OptOperationTypeDefinitionVec(d.map(std::convert::Into::into))
     }
 }
 
@@ -1744,7 +1744,7 @@ pub struct OptFieldDefinitionVec(pub Option<FieldDefinitionVec>);
 
 impl From<Option<Vec<FieldDefinition>>> for OptFieldDefinitionVec {
     fn from(d: Option<Vec<FieldDefinition>>) -> Self {
-        OptFieldDefinitionVec(d.map(|v| v.into()))
+        OptFieldDefinitionVec(d.map(std::convert::Into::into))
     }
 }
 
@@ -1847,7 +1847,7 @@ pub struct OptInputValueDefinitionVec(pub Option<InputValueDefinitionVec>);
 
 impl From<Option<Vec<InputValueDefinition>>> for OptInputValueDefinitionVec {
     fn from(d: Option<Vec<InputValueDefinition>>) -> Self {
-        OptInputValueDefinitionVec(d.map(|v| v.into()))
+        OptInputValueDefinitionVec(d.map(std::convert::Into::into))
     }
 }
 
@@ -2022,7 +2022,7 @@ pub struct OptEnumValueDefinitionVec(pub Option<EnumValueDefinitionVec>);
 
 impl From<Option<Vec<EnumValueDefinition>>> for OptEnumValueDefinitionVec {
     fn from(d: Option<Vec<EnumValueDefinition>>) -> Self {
-        OptEnumValueDefinitionVec(d.map(|v| v.into()))
+        OptEnumValueDefinitionVec(d.map(std::convert::Into::into))
     }
 }
 
