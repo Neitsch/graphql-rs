@@ -119,6 +119,26 @@ impl From<Source> for Document {
     }
 }
 
+fn with_location<'a, O: WithLocation + Sized, E: ParseError<&'a str>, F>(
+    f: F,
+    source: &'a Source,
+) -> impl Fn(&'a str) -> IResult<&'a str, O, E>
+where
+    F: Fn(&'a str) -> IResult<&'a str, O, E>,
+{
+    move |input: &'a str| {
+        f(input).map(|mut result| {
+            let loc = Location::new(
+                source.body.len() - input.len(),
+                source.body.len() - (&result.0).len(),
+                source,
+            );
+            result.1.with_loc(loc);
+            result
+        })
+    }
+}
+
 fn is_alphanumeric_or_underscope(c: u8) -> bool {
     is_alphanumeric(c) || c == b'_'
 }
@@ -148,21 +168,16 @@ fn name<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, Name, E> {
     move |input: &'a str| {
-        take_while1(|c: char| is_alphanumeric_or_underscope(c as u8))(input).map(
-            |(rest, string)| {
-                (
-                    rest,
-                    Name::new(
-                        string.to_string(),
-                        Location::new(
-                            source.body.len() - input.len(),
-                            source.body.len() - rest.len(),
-                            source,
-                        ),
-                    ),
-                )
-            },
-        )
+        with_location(
+            map(
+                take_while1(|c: char| is_alphanumeric_or_underscope(c as u8)),
+                |string: &'a str| Name {
+                    value: string.to_owned(),
+                    loc: None,
+                },
+            ),
+            source,
+        )(input)
     }
 }
 
@@ -176,19 +191,13 @@ fn variable<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, Variable, E> {
     move |input: &'a str| {
-        preceded(graphql_tag("$"), name(source))(input).map(|(rest, name)| {
-            (
-                rest,
-                Variable {
-                    loc: Some(Location::new(
-                        source.body.len() - input.len(),
-                        source.body.len() - rest.len(),
-                        source,
-                    )),
-                    name,
-                },
-            )
-        })
+        with_location(
+            map(preceded(graphql_tag("$"), name(source)), |name| Variable {
+                loc: None,
+                name,
+            }),
+            source,
+        )(input)
     }
 }
 
@@ -214,27 +223,23 @@ fn float_value<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, FloatValue, E> {
     move |input: &'a str| {
-        recognize(preceded(
-            integer_part,
-            alt((
-                fractional_part,
-                exponential_part,
-                recognize(pair(fractional_part, exponential_part)),
-            )),
-        ))(input)
-        .map(|(rest, res)| {
-            (
-                rest,
-                FloatValue {
-                    loc: Some(Location::new(
-                        source.body.len() - input.len(),
-                        source.body.len() - rest.len(),
-                        source,
+        with_location(
+            map(
+                recognize(preceded(
+                    integer_part,
+                    alt((
+                        fractional_part,
+                        exponential_part,
+                        recognize(pair(fractional_part, exponential_part)),
                     )),
+                )),
+                |res| FloatValue {
+                    loc: None,
                     value: res.to_string(),
                 },
-            )
-        })
+            ),
+            source,
+        )(input)
     }
 }
 
@@ -242,19 +247,13 @@ fn int_value<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, IntValue, E> {
     move |input: &'a str| {
-        recognize(integer_part)(input).map(|(rest, val)| {
-            (
-                rest,
-                IntValue {
-                    loc: Some(Location::new(
-                        source.body.len() - input.len(),
-                        source.body.len() - rest.len(),
-                        source,
-                    )),
-                    value: val.to_string(),
-                },
-            )
-        })
+        with_location(
+            map(recognize(integer_part), |val| IntValue {
+                loc: None,
+                value: val.to_string(),
+            }),
+            source,
+        )(input)
     }
 }
 
@@ -262,31 +261,27 @@ fn string_value<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, StringValue, E> {
     move |input: &'a str| {
-        alt((
-            delimited(
-                tag("\"\"\""),
-                recognize(terminated(
-                    many0(terminated(take(1usize), not(tag("\"\"\"")))),
-                    take(1usize),
+        with_location(
+            map(
+                alt((
+                    delimited(
+                        tag("\"\"\""),
+                        recognize(terminated(
+                            many0(terminated(take(1usize), not(tag("\"\"\"")))),
+                            take(1usize),
+                        )),
+                        tag("\"\"\""),
+                    ),
+                    delimited(tag("\""), take_till(|c| c == '"'), tag("\"")),
                 )),
-                tag("\"\"\""),
-            ),
-            delimited(tag("\""), take_till(|c| c == '"'), tag("\"")),
-        ))(input)
-        .map(|(rest, value)| {
-            (
-                rest,
-                StringValue {
+                |value: &'a str| StringValue {
                     value: value.to_string(),
-                    loc: Some(Location::new(
-                        source.body.len() - input.len(),
-                        source.body.len() - rest.len(),
-                        source,
-                    )),
+                    loc: None,
                     block: None,
                 },
-            )
-        })
+            ),
+            source,
+        )(input)
     }
 }
 
@@ -294,19 +289,16 @@ fn boolean_value<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, BooleanValue, E> {
     move |input: &'a str| {
-        alt((map(tag("true"), |_| true), map(tag("false"), |_| false)))(input).map(|(rest, b)| {
-            (
-                rest,
-                BooleanValue {
+        with_location(
+            map(
+                alt((map(tag("true"), |_| true), map(tag("false"), |_| false))),
+                |b| BooleanValue {
                     value: b,
-                    loc: Some(Location::new(
-                        source.body.len() - input.len(),
-                        source.body.len() - rest.len(),
-                        source,
-                    )),
+                    loc: None,
                 },
-            )
-        })
+            ),
+            source,
+        )(input)
     }
 }
 
@@ -314,18 +306,7 @@ fn null_value<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, NullValue, E> {
     move |input: &'a str| {
-        tag("NULL")(input).map(|(rest, _)| {
-            (
-                rest,
-                NullValue {
-                    loc: Some(Location::new(
-                        source.body.len() - input.len(),
-                        source.body.len() - rest.len(),
-                        source,
-                    )),
-                },
-            )
-        })
+        with_location(map(tag("NULL"), |_| NullValue { loc: None }), source)(input)
     }
 }
 
@@ -333,19 +314,13 @@ fn enum_value<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, EnumValue, E> {
     move |input: &'a str| {
-        name(source)(input).map(|(rest, v)| {
-            (
-                rest,
-                EnumValue {
-                    value: v.value,
-                    loc: Some(Location::new(
-                        source.body.len() - input.len(),
-                        source.body.len() - rest.len(),
-                        source,
-                    )),
-                },
-            )
-        })
+        with_location(
+            map(name(source), |v| EnumValue {
+                value: v.value,
+                loc: None,
+            }),
+            source,
+        )(input)
     }
 }
 
@@ -353,24 +328,20 @@ fn list_value<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, ListValue, E> {
     move |input: &'a str| {
-        delimited(
-            graphql_tag("["),
-            many0(preceded(opt(sp1), value(source))),
-            graphql_tag("]"),
-        )(input)
-        .map(|(rest, v)| {
-            (
-                rest,
-                ListValue {
+        with_location(
+            map(
+                delimited(
+                    graphql_tag("["),
+                    many0(preceded(opt(sp1), value(source))),
+                    graphql_tag("]"),
+                ),
+                |v| ListValue {
                     values: v.into(),
-                    loc: Some(Location::new(
-                        source.body.len() - input.len(),
-                        source.body.len() - rest.len(),
-                        source,
-                    )),
+                    loc: None,
                 },
-            )
-        })
+            ),
+            source,
+        )(input)
     }
 }
 
@@ -378,22 +349,17 @@ fn object_field<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, ObjectField, E> {
     move |input: &'a str| {
-        separated_pair(name(source), graphql_tag(":"), value(source))(input).map(
-            |(rest, (name, value))| {
-                (
-                    rest,
-                    ObjectField {
-                        loc: Some(Location::new(
-                            source.body.len() - input.len(),
-                            source.body.len() - rest.len(),
-                            source,
-                        )),
-                        value,
-                        name,
-                    },
-                )
-            },
-        )
+        with_location(
+            map(
+                separated_pair(name(source), graphql_tag(":"), value(source)),
+                |(name, value)| ObjectField {
+                    loc: None,
+                    value,
+                    name,
+                },
+            ),
+            source,
+        )(input)
     }
 }
 
@@ -401,24 +367,20 @@ fn object_value<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, ObjectValue, E> {
     move |input: &'a str| {
-        delimited(
-            graphql_tag("{"),
-            many0(preceded(opt(sp1), object_field(source))),
-            graphql_tag("}"),
-        )(input)
-        .map(|(rest, v)| {
-            (
-                rest,
-                ObjectValue {
+        with_location(
+            map(
+                delimited(
+                    graphql_tag("{"),
+                    many0(preceded(opt(sp1), object_field(source))),
+                    graphql_tag("}"),
+                ),
+                |v| ObjectValue {
                     fields: v.into(),
-                    loc: Some(Location::new(
-                        source.body.len() - input.len(),
-                        source.body.len() - rest.len(),
-                        source,
-                    )),
+                    loc: None,
                 },
-            )
-        })
+            ),
+            source,
+        )(input)
     }
 }
 
@@ -444,22 +406,17 @@ fn argument<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, Argument, E> {
     move |input: &'a str| {
-        separated_pair(name(source), graphql_tag(":"), value(source))(input).map(
-            |(rest, (name, value))| {
-                (
-                    rest,
-                    Argument {
-                        loc: Some(Location::new(
-                            source.body.len() - input.len(),
-                            source.body.len() - rest.len(),
-                            source,
-                        )),
-                        name,
-                        value,
-                    },
-                )
-            },
-        )
+        with_location(
+            map(
+                separated_pair(name(source), graphql_tag(":"), value(source)),
+                |(name, value)| Argument {
+                    loc: None,
+                    name,
+                    value,
+                },
+            ),
+            source,
+        )(input)
     }
 }
 
@@ -481,22 +438,17 @@ fn directive<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, Directive, E> {
     move |input: &'a str| {
-        preceded(graphql_tag("@"), pair(name(source), opt(arguments(source))))(input).map(
-            |(rest, (name, args))| {
-                (
-                    rest,
-                    Directive {
-                        loc: Some(Location::new(
-                            source.body.len() - input.len(),
-                            source.body.len() - rest.len(),
-                            source,
-                        )),
-                        name,
-                        arguments: args.into(),
-                    },
-                )
-            },
-        )
+        with_location(
+            map(
+                preceded(graphql_tag("@"), pair(name(source), opt(arguments(source)))),
+                |(name, args)| Directive {
+                    loc: None,
+                    name,
+                    arguments: args.into(),
+                },
+            ),
+            source,
+        )(input)
     }
 }
 
@@ -520,19 +472,10 @@ fn named_type<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, NamedType, E> {
     move |input: &'a str| {
-        name(source)(input).map(|(rest, name)| {
-            (
-                rest,
-                NamedType {
-                    loc: Some(Location::new(
-                        source.body.len() - input.len(),
-                        source.body.len() - rest.len(),
-                        source,
-                    )),
-                    name,
-                },
-            )
-        })
+        with_location(
+            map(name(source), |name| NamedType { loc: None, name }),
+            source,
+        )(input)
     }
 }
 
@@ -540,22 +483,17 @@ fn root_operation_type_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, OperationTypeDefinition, E> {
     move |input: &'a str| {
-        separated_pair(operation_type, graphql_tag(":"), named_type(source))(input).map(
-            |(rest, (operation, named_type))| {
-                (
-                    rest,
-                    OperationTypeDefinition {
-                        loc: Some(Location::new(
-                            source.body.len() - input.len(),
-                            source.body.len() - rest.len(),
-                            source,
-                        )),
-                        operation,
-                        _type: named_type,
-                    },
-                )
-            },
-        )
+        with_location(
+            map(
+                separated_pair(operation_type, graphql_tag(":"), named_type(source)),
+                |(operation, named_type)| OperationTypeDefinition {
+                    loc: None,
+                    operation,
+                    _type: named_type,
+                },
+            ),
+            source,
+        )(input)
     }
 }
 
@@ -563,33 +501,29 @@ fn schema_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, SchemaDefinition, E> {
     move |input: &'a str| {
-        preceded(
-            tag("schema"),
-            pair(
-                opt(directives(source)),
+        with_location(
+            map(
                 preceded(
-                    graphql_tag("{"),
-                    terminated(
-                        many0(root_operation_type_definition(source)),
-                        graphql_tag("}"),
+                    tag("schema"),
+                    pair(
+                        opt(directives(source)),
+                        preceded(
+                            graphql_tag("{"),
+                            terminated(
+                                many0(root_operation_type_definition(source)),
+                                graphql_tag("}"),
+                            ),
+                        ),
                     ),
                 ),
-            ),
-        )(input)
-        .map(|(rest, (directives, operation_types))| {
-            (
-                rest,
-                SchemaDefinition {
-                    loc: Some(Location::new(
-                        source.body.len() - input.len(),
-                        source.body.len() - rest.len(),
-                        source,
-                    )),
+                |(directives, operation_types)| SchemaDefinition {
+                    loc: None,
                     directives: directives.into(),
                     operation_types: operation_types.into(),
                 },
-            )
-        })
+            ),
+            source,
+        )(input)
     }
 }
 
@@ -637,23 +571,19 @@ fn list_type<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, ListType, E> {
     move |input: &'a str| {
-        preceded(
-            graphql_tag("["),
-            terminated(type_node(source), graphql_tag("]")),
-        )(input)
-        .map(|(rest, v)| {
-            (
-                rest,
-                ListType {
-                    loc: Some(Location::new(
-                        source.body.len() - input.len(),
-                        source.body.len() - rest.len(),
-                        source,
-                    )),
+        with_location(
+            map(
+                preceded(
+                    graphql_tag("["),
+                    terminated(type_node(source), graphql_tag("]")),
+                ),
+                |v| ListType {
+                    loc: None,
                     _type: Box::new(v),
                 },
-            )
-        })
+            ),
+            source,
+        )(input)
     }
 }
 
@@ -661,32 +591,30 @@ fn non_null_type<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, NonNullType, E> {
     move |input: &'a str| {
-        terminated(
-            alt((
-                move |input: &'a str| {
-                    list_type(source)(input)
-                        .map(|(rest, v)| (rest, NonNullInnerType::ListType(Box::new(v))))
-                },
-                move |input: &'a str| {
-                    named_type(source)(input)
-                        .map(|(rest, v)| (rest, NonNullInnerType::NamedType(Box::new(v))))
-                },
-            )),
-            graphql_tag("!"),
-        )(input)
-        .map(|(rest, v)| {
-            (
-                rest,
-                NonNullType {
-                    loc: Some(Location::new(
-                        source.body.len() - input.len(),
-                        source.body.len() - rest.len(),
-                        source,
+        with_location(
+            map(
+                terminated(
+                    alt((
+                        move |input: &'a str| {
+                            map(list_type(source), |v| {
+                                NonNullInnerType::ListType(Box::new(v))
+                            })(input)
+                        },
+                        move |input: &'a str| {
+                            map(named_type(source), |v| {
+                                NonNullInnerType::NamedType(Box::new(v))
+                            })(input)
+                        },
                     )),
+                    graphql_tag("!"),
+                ),
+                |v| NonNullType {
+                    loc: None,
                     _type: v,
                 },
-            )
-        })
+            ),
+            source,
+        )(input)
     }
 }
 
@@ -706,32 +634,26 @@ fn input_value_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, InputValueDefinition, E> {
     move |input: &'a str| {
-        tuple((
-            opt(terminated(description(source), opt(sp1))),
-            terminated(name(source), graphql_tag(":")),
-            type_node(source),
-            opt(default_value(source)),
-            opt(directives(source)),
-        ))(input)
-        .map(
-            |(rest, (desc, name, type_node, default_value, directives))| {
-                (
-                    rest,
-                    InputValueDefinition {
-                        loc: Some(Location::new(
-                            source.body.len() - input.len(),
-                            source.body.len() - rest.len(),
-                            source,
-                        )),
-                        description: desc.into(),
-                        name,
-                        _type: type_node,
-                        default_value: default_value.into(),
-                        directives: directives.into(),
-                    },
-                )
-            },
-        )
+        with_location(
+            map(
+                tuple((
+                    opt(terminated(description(source), opt(sp1))),
+                    terminated(name(source), graphql_tag(":")),
+                    type_node(source),
+                    opt(default_value(source)),
+                    opt(directives(source)),
+                )),
+                |(desc, name, type_node, default_value, directives)| InputValueDefinition {
+                    loc: None,
+                    description: desc.into(),
+                    name,
+                    _type: type_node,
+                    default_value: default_value.into(),
+                    directives: directives.into(),
+                },
+            ),
+            source,
+        )(input)
     }
 }
 
@@ -753,31 +675,27 @@ fn directive_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, DirectiveDefinition, E> {
     move |input: &'a str| {
-        tuple((
-            opt(terminated(description(source), opt(sp1))),
-            preceded(
-                graphql_tag("directive"),
-                preceded(graphql_tag("@"), name(source)),
-            ),
-            terminated(opt(argument_definition(source)), tag("on")),
-            directive_locations(source),
-        ))(input)
-        .map(|(rest, (desc, name, arguments, locations))| {
-            (
-                rest,
-                DirectiveDefinition {
-                    loc: Some(Location::new(
-                        source.body.len() - input.len(),
-                        source.body.len() - rest.len(),
-                        source,
-                    )),
+        with_location(
+            map(
+                tuple((
+                    opt(terminated(description(source), opt(sp1))),
+                    preceded(
+                        graphql_tag("directive"),
+                        preceded(graphql_tag("@"), name(source)),
+                    ),
+                    terminated(opt(argument_definition(source)), tag("on")),
+                    directive_locations(source),
+                )),
+                |(desc, name, arguments, locations)| DirectiveDefinition {
+                    loc: None,
                     description: desc.into(),
                     name,
                     arguments: arguments.into(),
                     locations,
                 },
-            )
-        })
+            ),
+            source,
+        )(input)
     }
 }
 
@@ -785,37 +703,33 @@ fn union_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, UnionTypeDefinition, E> {
     move |input: &'a str| {
-        terminated(
-            tuple((
-                opt(terminated(description(source), opt(sp1))),
-                preceded(graphql_tag("union"), name(source)),
-                opt(directives(source)),
-                preceded(
-                    graphql_tag("="),
-                    opt(preceded(
-                        preceded(opt(sp1), opt(graphql_tag("|"))),
-                        separated_list(graphql_tag("|"), named_type(source)),
+        with_location(
+            map(
+                terminated(
+                    tuple((
+                        opt(terminated(description(source), opt(sp1))),
+                        preceded(graphql_tag("union"), name(source)),
+                        opt(directives(source)),
+                        preceded(
+                            graphql_tag("="),
+                            opt(preceded(
+                                preceded(opt(sp1), opt(graphql_tag("|"))),
+                                separated_list(graphql_tag("|"), named_type(source)),
+                            )),
+                        ),
                     )),
+                    opt(sp1),
                 ),
-            )),
-            opt(sp1),
-        )(input)
-        .map(|(rest, (desc, name, directives, union_member_types))| {
-            (
-                rest,
-                UnionTypeDefinition {
-                    loc: Some(Location::new(
-                        source.body.len() - input.len(),
-                        source.body.len() - rest.len(),
-                        source,
-                    )),
+                |(desc, name, directives, union_member_types)| UnionTypeDefinition {
+                    loc: None,
                     description: desc.into(),
                     name,
                     directives: directives.into(),
                     types: union_member_types,
                 },
-            )
-        })
+            ),
+            source,
+        )(input)
     }
 }
 
@@ -823,26 +737,22 @@ fn scalar_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, ScalarTypeDefinition, E> {
     move |input: &'a str| {
-        tuple((
-            opt(terminated(description(source), opt(sp1))),
-            preceded(graphql_tag("scalar"), name(source)),
-            terminated(opt(directives(source)), opt(sp1)),
-        ))(input)
-        .map(|(rest, (desc, name, directives))| {
-            (
-                rest,
-                ScalarTypeDefinition {
-                    loc: Some(Location::new(
-                        source.body.len() - input.len(),
-                        source.body.len() - rest.len(),
-                        source,
-                    )),
+        with_location(
+            map(
+                tuple((
+                    opt(terminated(description(source), opt(sp1))),
+                    preceded(graphql_tag("scalar"), name(source)),
+                    terminated(opt(directives(source)), opt(sp1)),
+                )),
+                |(desc, name, directives)| ScalarTypeDefinition {
+                    loc: None,
                     description: desc.into(),
                     name,
                     directives: directives.into(),
                 },
-            )
-        })
+            ),
+            source,
+        )(input)
     }
 }
 
@@ -850,32 +760,26 @@ fn field_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, FieldDefinition, E> {
     move |input: &'a str| {
-        tuple((
-            opt(terminated(description(source), opt(sp1))),
-            name(source),
-            opt(argument_definition(source)),
-            preceded(graphql_tag(":"), type_node(source)),
-            opt(directives(source)),
-        ))(input)
-        .map(
-            |(rest, (desc, name, argument_definition, type_node, directives))| {
-                (
-                    rest,
-                    FieldDefinition {
-                        loc: Some(Location::new(
-                            source.body.len() - input.len(),
-                            source.body.len() - rest.len(),
-                            source,
-                        )),
-                        description: desc.into(),
-                        name,
-                        arguments: argument_definition.into(),
-                        _type: type_node,
-                        directives: directives.into(),
-                    },
-                )
-            },
-        )
+        with_location(
+            map(
+                tuple((
+                    opt(terminated(description(source), opt(sp1))),
+                    name(source),
+                    opt(argument_definition(source)),
+                    preceded(graphql_tag(":"), type_node(source)),
+                    opt(directives(source)),
+                )),
+                |(desc, name, argument_definition, type_node, directives)| FieldDefinition {
+                    loc: None,
+                    description: desc.into(),
+                    name,
+                    arguments: argument_definition.into(),
+                    _type: type_node,
+                    directives: directives.into(),
+                },
+            ),
+            source,
+        )(input)
     }
 }
 
@@ -897,28 +801,24 @@ fn interface_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, InterfaceTypeDefinition, E> {
     move |input: &'a str| {
-        tuple((
-            opt(terminated(description(source), opt(sp1))),
-            preceded(graphql_tag("interface"), name(source)),
-            opt(directives(source)),
-            opt(fields_definition(source)),
-        ))(input)
-        .map(|(rest, (desc, name, directives, fd))| {
-            (
-                rest,
-                InterfaceTypeDefinition {
-                    loc: Some(Location::new(
-                        source.body.len() - input.len(),
-                        source.body.len() - rest.len(),
-                        source,
-                    )),
+        with_location(
+            map(
+                tuple((
+                    opt(terminated(description(source), opt(sp1))),
+                    preceded(graphql_tag("interface"), name(source)),
+                    opt(directives(source)),
+                    opt(fields_definition(source)),
+                )),
+                |(desc, name, directives, fd)| InterfaceTypeDefinition {
+                    loc: None,
                     description: desc.into(),
                     name,
                     directives: directives.into(),
                     fields: fd.into(),
                 },
-            )
-        })
+            ),
+            source,
+        )(input)
     }
 }
 
@@ -940,28 +840,24 @@ fn input_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, InputObjectTypeDefinition, E> {
     move |input: &'a str| {
-        tuple((
-            opt(terminated(description(source), opt(sp1))),
-            preceded(graphql_tag("input"), name(source)),
-            opt(directives(source)),
-            opt(input_fields_definition(source)),
-        ))(input)
-        .map(|(rest, (desc, name, directives, ifd))| {
-            (
-                rest,
-                InputObjectTypeDefinition {
-                    loc: Some(Location::new(
-                        source.body.len() - input.len(),
-                        source.body.len() - rest.len(),
-                        source,
-                    )),
+        with_location(
+            map(
+                tuple((
+                    opt(terminated(description(source), opt(sp1))),
+                    preceded(graphql_tag("input"), name(source)),
+                    opt(directives(source)),
+                    opt(input_fields_definition(source)),
+                )),
+                |(desc, name, directives, ifd)| InputObjectTypeDefinition {
+                    loc: None,
                     description: desc.into(),
                     name,
                     directives: directives.into(),
                     fields: ifd.into(),
                 },
-            )
-        })
+            ),
+            source,
+        )(input)
     }
 }
 
@@ -969,38 +865,32 @@ fn object_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, ObjectTypeDefinition, E> {
     move |input: &'a str| {
-        tuple((
-            opt(terminated(description(source), opt(sp1))),
-            preceded(graphql_tag("type"), name(source)),
-            opt(preceded(
-                graphql_tag("implements"),
-                preceded(
-                    opt(graphql_tag("&")),
-                    separated_list(graphql_tag("&"), named_type(source)),
-                ),
-            )),
-            opt(directives(source)),
-            opt(fields_definition(source)),
-        ))(input)
-        .map(
-            |(rest, (desc, name_value, implements_interfaces, directives, fd))| {
-                (
-                    rest,
-                    ObjectTypeDefinition {
-                        loc: Some(Location {
-                            source: source.clone(),
-                            start: (source.body.len() - input.len()) as u64,
-                            end: (source.body.len() - rest.len()) as u64,
-                        }),
-                        description: desc.into(),
-                        name: name_value,
-                        interfaces: implements_interfaces,
-                        directives: directives.into(),
-                        fields: fd.into(),
-                    },
-                )
-            },
-        )
+        with_location(
+            map(
+                tuple((
+                    opt(terminated(description(source), opt(sp1))),
+                    preceded(graphql_tag("type"), name(source)),
+                    opt(preceded(
+                        graphql_tag("implements"),
+                        preceded(
+                            opt(graphql_tag("&")),
+                            separated_list(graphql_tag("&"), named_type(source)),
+                        ),
+                    )),
+                    opt(directives(source)),
+                    opt(fields_definition(source)),
+                )),
+                |(desc, name_value, implements_interfaces, directives, fd)| ObjectTypeDefinition {
+                    loc: None,
+                    description: desc.into(),
+                    name: name_value,
+                    interfaces: implements_interfaces,
+                    directives: directives.into(),
+                    fields: fd.into(),
+                },
+            ),
+            source,
+        )(input)
     }
 }
 
@@ -1035,56 +925,48 @@ fn enum_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, EnumTypeDefinition, E> {
     move |input: &'a str| {
-        tuple((
-            opt(terminated(description(source), opt(sp1))),
-            preceded(graphql_tag("enum"), name(source)),
-            opt(directives(source)),
-            opt(delimited(
-                graphql_tag("{"),
-                many0(move |input: &'a str| {
-                    terminated(
-                        tuple((
-                            opt(terminated(description(source), opt(sp1))),
-                            name(source),
-                            opt(directives(source)),
-                        )),
-                        opt(sp1),
-                    )(input)
-                    .map(|(rest, (desc, n, d))| {
-                        (
-                            rest,
-                            EnumValueDefinition {
-                                loc: Some(Location::new(
-                                    source.body.len() - input.len(),
-                                    source.body.len() - rest.len(),
-                                    source,
-                                )),
-                                description: desc.into(),
-                                name: n,
-                                directives: d.into(),
-                            },
-                        )
-                    })
-                }),
-                graphql_tag("}"),
-            )),
-        ))(input)
-        .map(|(rest, (desc, name_value, directives_value, values))| {
-            (
-                rest,
-                EnumTypeDefinition {
-                    loc: Some(Location::new(
-                        source.body.len() - input.len(),
-                        source.body.len() - rest.len(),
-                        source,
+        with_location(
+            map(
+                tuple((
+                    opt(terminated(description(source), opt(sp1))),
+                    preceded(graphql_tag("enum"), name(source)),
+                    opt(directives(source)),
+                    opt(delimited(
+                        graphql_tag("{"),
+                        many0(move |input: &'a str| {
+                            with_location(
+                                map(
+                                    terminated(
+                                        tuple((
+                                            opt(terminated(description(source), opt(sp1))),
+                                            name(source),
+                                            opt(directives(source)),
+                                        )),
+                                        opt(sp1),
+                                    ),
+                                    |(desc, n, d)| EnumValueDefinition {
+                                        loc: None,
+                                        description: desc.into(),
+                                        name: n,
+                                        directives: d.into(),
+                                    },
+                                ),
+                                source,
+                            )(input)
+                        }),
+                        graphql_tag("}"),
                     )),
+                )),
+                |(desc, name_value, directives_value, values)| EnumTypeDefinition {
+                    loc: None,
                     description: desc.into(),
                     name: name_value,
                     directives: directives_value.into(),
                     values: values.into(),
                 },
-            )
-        })
+            ),
+            source,
+        )(input)
     }
 }
 
@@ -1107,21 +989,13 @@ fn definition<'a, E: ParseError<&'a str>>(
 }
 
 fn document<'a, E: ParseError<&'a str>>(source: &'a Source) -> IResult<&'a str, Document, E> {
-    let document_parser = move |input: &'a str| {
-        many0(definition(source))(input).map(|(rest, definitions)| {
-            (
-                rest,
-                Document {
-                    definitions: definitions.into(),
-                    loc: Some(Location::new(
-                        source.body.len() - input.len(),
-                        source.body.len() - rest.len(),
-                        source,
-                    )),
-                },
-            )
-        })
-    };
+    let document_parser = with_location(
+        map(many0(definition(source)), |definitions| Document {
+            definitions: definitions.into(),
+            loc: None,
+        }),
+        source,
+    );
     delimited(opt(sp1), document_parser, opt(sp1))(&source.body)
 }
 

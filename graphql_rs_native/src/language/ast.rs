@@ -23,7 +23,7 @@ impl Location {
     }
 }
 
-trait WithLocation {
+pub trait WithLocation {
     fn with_loc(&mut self, loc: Location);
 }
 
@@ -157,7 +157,6 @@ macro_rules! ast_enum {
         )+
     };
 }
-
 
 macro_rules! ast_node_enum {
     ( $type:ident, { $( $name:ident ), * } ) => {
