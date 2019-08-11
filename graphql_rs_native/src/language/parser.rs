@@ -14,18 +14,35 @@ use nom::{
 /// Takes a graphql source representation and returns the parsed document.
 /// ```
 /// # use graphql_rs_native::language::parser::parse;
-/// # use graphql_rs_native::language::source::Source;
+/// # use graphql_rs_native::language::source::{Source, Location as LocationOffset};
 /// # use graphql_rs_native::language::ast::{
 /// #   Document, DefinitionVec, Definition, TypeSystemDefinition, TypeDefinition, NamedType,
 /// #   Description, Name, OptDirectiveVec, OptFieldDefinitionVec, ObjectTypeDefinition,
-/// #   OptInputValueDefinitionVec, FieldDefinition, FieldDefinitionVec, Type
+/// #   OptInputValueDefinitionVec, FieldDefinition, FieldDefinitionVec, Type, Location
 /// # };
-/// let document = parse(&Source::new("type User { id: ID }".to_string(), None, None));
+/// let source = Source::new("type User { id: ID }".to_string(), None, None);
+/// let document = parse(&source);
 /// assert_eq!(document, Document {
-///    loc: None,
+///    loc: Some(Location {
+///        start: 0,
+///        end: 20,
+///        source: Source::new(
+///            source.body.clone(),
+///            Some("GraphQL Request".to_owned()),
+///            Some(LocationOffset::new(1, 1))
+///        )
+///    }),
 ///    definitions: vec![
 ///         TypeSystemDefinition::from(TypeDefinition::from(ObjectTypeDefinition{
-///             loc: None,
+///             loc: Some(Location {
+///                 start: 0,
+///                 end: 20,
+///                 source: Source::new(
+///                     source.body.clone(),
+///                     Some("GraphQL Request".to_owned()),
+///                     Some(LocationOffset::new(1, 1))
+///                 )
+///             }),
 ///             description: None.into(),
 ///             name: Name::new("User".to_string()),
 ///             interfaces: None,
@@ -43,7 +60,7 @@ use nom::{
 ///});
 /// ```
 pub fn parse(source: &Source) -> Document {
-    let parse_result = document::<(&str, ErrorKind)>(&source.body)
+    let parse_result = document::<(&str, ErrorKind)>(&source)
         .map_err(|e| panic!("{:?}", e))
         .unwrap();
     assert_eq!(parse_result.0.len(), 0);
@@ -634,9 +651,9 @@ fn input_definition<'a, E: ParseError<&'a str>>(
 }
 
 fn object_definition<'a, E: ParseError<&'a str>>(
-    source: &'a str,
-) -> IResult<&'a str, ObjectTypeDefinition, E> {
-    map(
+    source: &'a Source,
+) -> impl Fn(&'a str) -> IResult<&'a str, ObjectTypeDefinition, E> {
+    move |input: &'a str| {
         tuple((
             opt(terminated(description, opt(sp1))),
             preceded(graphql_tag("type"), name),
@@ -649,29 +666,44 @@ fn object_definition<'a, E: ParseError<&'a str>>(
             )),
             opt(directives),
             opt(fields_definition),
-        )),
-        |(desc, name_value, implements_interfaces, directives, fd)| ObjectTypeDefinition {
-            loc: None,
-            description: desc.into(),
-            name: name_value,
-            interfaces: implements_interfaces,
-            directives: directives.into(),
-            fields: fd.into(),
-        },
-    )(source)
+        ))(input)
+        .map(
+            |(rest, (desc, name_value, implements_interfaces, directives, fd))| {
+                (
+                    rest,
+                    ObjectTypeDefinition {
+                        loc: Some(Location {
+                            source: source.clone(),
+                            start: (source.body.len() - input.len()) as u64,
+                            end: (source.body.len() - rest.len()) as u64,
+                        }),
+                        description: desc.into(),
+                        name: name_value,
+                        interfaces: implements_interfaces,
+                        directives: directives.into(),
+                        fields: fd.into(),
+                    },
+                )
+            },
+        )
+    }
 }
 
 fn type_definition<'a, E: ParseError<&'a str>>(
-    source: &'a str,
-) -> IResult<&'a str, TypeDefinition, E> {
-    alt((
-        map(object_definition, |graphql_object| graphql_object.into()),
-        map(interface_definition, |graphql_object| graphql_object.into()),
-        map(scalar_definition, |graphql_object| graphql_object.into()),
-        map(union_definition, |graphql_object| graphql_object.into()),
-        map(enum_definition, |graphql_object| graphql_object.into()),
-        map(input_definition, |graphql_object| graphql_object.into()),
-    ))(source)
+    source: &'a Source,
+) -> impl Fn(&'a str) -> IResult<&'a str, TypeDefinition, E> {
+    move |input: &'a str| {
+        alt((
+            map(object_definition(source), |graphql_object| {
+                graphql_object.into()
+            }),
+            map(interface_definition, |graphql_object| graphql_object.into()),
+            map(scalar_definition, |graphql_object| graphql_object.into()),
+            map(union_definition, |graphql_object| graphql_object.into()),
+            map(enum_definition, |graphql_object| graphql_object.into()),
+            map(input_definition, |graphql_object| graphql_object.into()),
+        ))(input)
+    }
 }
 
 fn enum_definition<'a, E: ParseError<&'a str>>(
@@ -714,32 +746,45 @@ fn enum_definition<'a, E: ParseError<&'a str>>(
 }
 
 fn type_system_definition<'a, E: ParseError<&'a str>>(
-    source: &'a str,
-) -> IResult<&'a str, TypeSystemDefinition, E> {
-    alt((
-        map(schema_definition, |sd| sd.into()),
-        map(directive_definition, |dd| dd.into()),
-        map(type_definition, |td| td.into()),
-    ))(source)
+    source: &'a Source,
+) -> impl Fn(&'a str) -> IResult<&'a str, TypeSystemDefinition, E> {
+    move |input: &'a str| {
+        alt((
+            map(schema_definition, |sd| sd.into()),
+            map(directive_definition, |dd| dd.into()),
+            map(type_definition(source), |td| td.into()),
+        ))(input)
+    }
 }
 
-fn definition<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Definition, E> {
-    map(type_system_definition, |tsd| tsd.into())(source)
+fn definition<'a, E: ParseError<&'a str>>(
+    source: &'a Source,
+) -> impl Fn(&'a str) -> IResult<&'a str, Definition, E> {
+    move |input: &'a str| map(type_system_definition(source), |tsd| tsd.into())(input)
 }
 
-fn document<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a str, Document, E> {
-    delimited(
-        opt(sp1),
-        map(many0(definition), |definitions| Document {
-            definitions: definitions.into(),
-            loc: None,
-        }),
-        opt(sp1),
-    )(source)
+fn document<'a, E: ParseError<&'a str>>(source: &'a Source) -> IResult<&'a str, Document, E> {
+    let document_parser = move |input: &'a str| {
+        many0(definition(source))(input).map(|(rest, definitions)| {
+            (
+                rest,
+                Document {
+                    definitions: definitions.into(),
+                    loc: Some(Location::new(
+                        source.body.len() - input.len(),
+                        source.body.len() - rest.len(),
+                        source,
+                    )),
+                },
+            )
+        })
+    };
+    delimited(opt(sp1), document_parser, opt(sp1))(&source.body)
 }
 
 #[cfg(test)]
 mod tests {
+    use super::super::source::Location as LocationOffset;
     use super::*;
 
     #[test]
@@ -847,8 +892,9 @@ mod tests {
 
     #[test]
     fn test_type_system_definition() {
+        let source = Source::new("schema {}".to_owned(), None, None);
         assert_eq!(
-            type_system_definition::<(&str, ErrorKind)>("schema {}"),
+            type_system_definition::<(&str, ErrorKind)>(&source)(&source.body),
             Ok((
                 "",
                 TypeSystemDefinition::SchemaDefinition(Box::new(SchemaDefinition {
@@ -948,12 +994,21 @@ mod tests {
 
     #[test]
     fn test_object_definition_1() {
+        let source = Source::new("type User { id: ID }".to_owned(), None, None);
         assert_eq!(
-            object_definition::<(&str, ErrorKind)>("type User { id: ID }"),
+            object_definition::<(&str, ErrorKind)>(&source)(&source.body),
             Ok((
                 "",
                 ObjectTypeDefinition {
-                    loc: None,
+                    loc: Some(Location {
+                        start: 0,
+                        end: 20,
+                        source: Source::new(
+                            "type User { id: ID }".to_owned(),
+                            Some("GraphQL Request".to_owned()),
+                            Some(LocationOffset::new(1, 1))
+                        )
+                    }),
                     description: None.into(),
                     name: Name::new("User".to_string()),
                     interfaces: None,
@@ -977,12 +1032,21 @@ mod tests {
 
     #[test]
     fn test_object_definition_2() {
+        let source = Source::new("type User".to_owned(), None, None);
         assert_eq!(
-            object_definition::<(&str, ErrorKind)>("type User"),
+            object_definition::<(&str, ErrorKind)>(&source)(&source.body),
             Ok((
                 "",
                 ObjectTypeDefinition {
-                    loc: None,
+                    loc: Some(Location {
+                        start: 0,
+                        end: 9,
+                        source: Source::new(
+                            source.body.clone(),
+                            Some("GraphQL Request".to_owned()),
+                            Some(LocationOffset::new(1, 1))
+                        )
+                    }),
                     description: None.into(),
                     name: Name::new("User".to_string()),
                     interfaces: None,
@@ -990,20 +1054,32 @@ mod tests {
                     fields: None.into(),
                 }
             ))
-        )
+        );
     }
 
     #[test]
     fn test_object_definition_3() {
-        assert_eq!(
-            object_definition::<(&str, ErrorKind)>(
-                "\"\"\"Comment\"\"\"
+        let source = Source::new(
+            "\"\"\"Comment\"\"\"
             type User"
-            ),
+                .to_owned(),
+            None,
+            None,
+        );
+        assert_eq!(
+            object_definition::<(&str, ErrorKind)>(&source)(&source.body),
             Ok((
                 "",
                 ObjectTypeDefinition {
-                    loc: None,
+                    loc: Some(Location {
+                        start: 0,
+                        end: 35,
+                        source: Source::new(
+                            source.body.clone(),
+                            Some("GraphQL Request".to_owned()),
+                            Some(LocationOffset::new(1, 1))
+                        )
+                    }),
                     description: Some(StringValue {
                         value: "Comment".to_string(),
                         loc: None,
@@ -1016,13 +1092,14 @@ mod tests {
                     fields: None.into(),
                 }
             ))
-        )
+        );
     }
 
     #[test]
     fn test_type_definition_1() {
+        let source = Source::new("input User".to_owned(), None, None);
         assert_eq!(
-            type_definition::<(&str, ErrorKind)>("input User"),
+            type_definition::<(&str, ErrorKind)>(&source)(&source.body),
             Ok((
                 "",
                 TypeDefinition::InputObjectTypeDefinition(Box::new(InputObjectTypeDefinition {
@@ -1033,13 +1110,14 @@ mod tests {
                     fields: None.into(),
                 }))
             ))
-        )
+        );
     }
 
     #[test]
     fn test_definition() {
+        let source = Source::new("schema {}".to_owned(), None, None);
         assert_eq!(
-            definition::<(&str, ErrorKind)>("schema {}"),
+            definition::<(&str, ErrorKind)>(&source)(&source.body),
             Ok((
                 "",
                 TypeSystemDefinition::SchemaDefinition(Box::new(SchemaDefinition {
@@ -1054,12 +1132,17 @@ mod tests {
 
     #[test]
     fn test_document_1() {
+        let source = Source::new("schema {}".to_owned(), None, None);
         assert_eq!(
-            document::<nom::error::VerboseError<&str>>("schema {}"),
+            document::<nom::error::VerboseError<&str>>(&source),
             Ok((
                 "",
                 Document {
-                    loc: None,
+                    loc: Some(Location {
+                        start: 0,
+                        end: 9,
+                        source: source.clone()
+                    }),
                     definitions: vec![TypeSystemDefinition::SchemaDefinition(Box::new(
                         SchemaDefinition {
                             loc: None,
@@ -1078,7 +1161,7 @@ mod tests {
     fn test_document_2() {
         use insta::assert_json_snapshot_matches;
         assert_json_snapshot_matches!(document::<(&str, ErrorKind)>(
-            "
+            &Source::new("
     input TestInput {
         id: Int!
     }
@@ -1133,7 +1216,7 @@ mod tests {
       \"\"\"
       OUTSIDE
     }
-            "
+            ".to_owned(), None, None)
         )
         .unwrap_or_else(|_| panic!("Test failed")));
     }
@@ -1141,7 +1224,11 @@ mod tests {
     #[test]
     fn test_document_3() {
         use insta::assert_json_snapshot_matches;
-        assert_json_snapshot_matches!(document::<nom::error::VerboseError<&str>>("type User")
-            .unwrap_or_else(|_| panic!("Test failed")));
+        assert_json_snapshot_matches!(document::<nom::error::VerboseError<&str>>(&Source::new(
+            "type User".to_owned(),
+            None,
+            None
+        ))
+        .unwrap_or_else(|_| panic!("Test failed")));
     }
 }

@@ -1,14 +1,24 @@
 ---
-created: "2019-08-06T15:12:32.030616Z"
+created: "2019-08-11T11:52:34.105678Z"
 creator: insta@0.8.2
 source: graphql_rs_native/src/language/parser.rs
-expression: "document::<(&str,\n            ErrorKind)>(\"\n    input TestInput {\n        id: Int!\n    }\n\n    type Author {\n        id: Int!\n        firstName: String\n        lastName: String\n        posts: [Post]\n    }\n\n    \\\"\\\"\\\"\n    Block comment\n    \\\"\\\"\\\"\n    type Post {\n        id: Int!\n        title: String\n        author: Author\n        votes: Int\n    }\n\n    # the schema allows the following query:\n    type Query {\n        posts: [Post]\n        author(id: Int!): Author\n    }\n\n    # this schema allows the following mutation:\n    type Mutation {\n        upvotePost (\n        postId: Int!\n        orderBy: DeploymentOrder = { field: CREATED_AT direction: ASC }\n        ): Post\n    }\n\n    \\\"\\\"\\\"\n    Collaborators affiliation level with a subject.\n    \\\"\\\"\\\"\n    enum CollaboratorAffiliation {\n      \\\"\\\"\\\"\n      All collaborators the authenticated user can see.\n      \\\"\\\"\\\"\n      ALL\n\n      \\\"\\\"\\\"\n      All collaborators with permissions to an organization-owned subject, regardless of organization membership status.\n      \\\"\\\"\\\"\n      DIRECT\n\n      \\\"\\\"\\\"\n      All outside collaborators of an organization-owned subject.\n      \\\"\\\"\\\"\n      OUTSIDE\n    }\n            \").unwrap_or_else(|_|\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  panic!(\"Test failed\"))"
+expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    input TestInput {\\n        id: Int!\\n    }\\n\\n    type Author {\\n        id: Int!\\n        firstName: String\\n        lastName: String\\n        posts: [Post]\\n    }\\n\\n    \\\"\\\"\\\"\\n    Block comment\\n    \\\"\\\"\\\"\\n    type Post {\\n        id: Int!\\n        title: String\\n        author: Author\\n        votes: Int\\n    }\\n\\n    # the schema allows the following query:\\n    type Query {\\n        posts: [Post]\\n        author(id: Int!): Author\\n    }\\n\\n    # this schema allows the following mutation:\\n    type Mutation {\\n        upvotePost (\\n        postId: Int!\\n        orderBy: DeploymentOrder = { field: CREATED_AT direction: ASC }\\n        ): Post\\n    }\\n\\n    \\\"\\\"\\\"\\n    Collaborators affiliation level with a subject.\\n    \\\"\\\"\\\"\\n    enum CollaboratorAffiliation {\\n      \\\"\\\"\\\"\\n      All collaborators the authenticated user can see.\\n      \\\"\\\"\\\"\\n      ALL\\n\\n      \\\"\\\"\\\"\\n      All collaborators with permissions to an organization-owned subject, regardless of organization membership status.\\n      \\\"\\\"\\\"\\n      DIRECT\\n\\n      \\\"\\\"\\\"\\n      All outside collaborators of an organization-owned subject.\\n      \\\"\\\"\\\"\\n      OUTSIDE\\n    }\\n            \".to_owned(),\n                                     None,\n                                     None)).unwrap_or_else(|_|\n                                                               panic!(\"Test failed\"))"
 ---
 [
   "",
   {
     "kind": "Document",
-    "loc": null,
+    "loc": {
+      "start": 5,
+      "end": 1093,
+      "source": {
+        "name": "GraphQL Request",
+        "locationOffset": {
+          "line": 1,
+          "column": 1
+        }
+      }
+    },
     "definitions": [
       {
         "kind": "TypeSystemDefinition",
@@ -58,7 +68,17 @@ expression: "document::<(&str,\n            ErrorKind)>(\"\n    input TestInput 
         "kind": "TypeDefinition",
         "kind": "ObjectTypeDefinition",
         "kind": "ObjectTypeDefinition",
-        "loc": null,
+        "loc": {
+          "start": 51,
+          "end": 166,
+          "source": {
+            "name": "GraphQL Request",
+            "locationOffset": {
+              "line": 1,
+              "column": 1
+            }
+          }
+        },
         "description": null,
         "name": {
           "kind": "Name",
@@ -173,7 +193,17 @@ expression: "document::<(&str,\n            ErrorKind)>(\"\n    input TestInput 
         "kind": "TypeDefinition",
         "kind": "ObjectTypeDefinition",
         "kind": "ObjectTypeDefinition",
-        "loc": null,
+        "loc": {
+          "start": 166,
+          "end": 349,
+          "source": {
+            "name": "GraphQL Request",
+            "locationOffset": {
+              "line": 1,
+              "column": 1
+            }
+          }
+        },
         "description": {
           "kind": "StringValue",
           "loc": null,
@@ -288,7 +318,17 @@ expression: "document::<(&str,\n            ErrorKind)>(\"\n    input TestInput 
         "kind": "TypeDefinition",
         "kind": "ObjectTypeDefinition",
         "kind": "ObjectTypeDefinition",
-        "loc": null,
+        "loc": {
+          "start": 349,
+          "end": 477,
+          "source": {
+            "name": "GraphQL Request",
+            "locationOffset": {
+              "line": 1,
+              "column": 1
+            }
+          }
+        },
         "description": null,
         "name": {
           "kind": "Name",
@@ -382,7 +422,17 @@ expression: "document::<(&str,\n            ErrorKind)>(\"\n    input TestInput 
         "kind": "TypeDefinition",
         "kind": "ObjectTypeDefinition",
         "kind": "ObjectTypeDefinition",
-        "loc": null,
+        "loc": {
+          "start": 477,
+          "end": 634,
+          "source": {
+            "name": "GraphQL Request",
+            "locationOffset": {
+              "line": 1,
+              "column": 1
+            }
+          }
+        },
         "description": null,
         "name": {
           "kind": "Name",

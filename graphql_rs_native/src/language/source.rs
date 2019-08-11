@@ -5,6 +5,15 @@ pub struct Location {
     column: u64,
 }
 
+impl Location {
+    pub fn new(line: usize, column: usize) -> Location {
+        Location {
+            line: line as u64,
+            column: column as u64,
+        }
+    }
+}
+
 /// A representation of source input to GraphQL.
 /// `name` and `locationOffset` are optional. They are useful for clients who
 /// store GraphQL documents in source files; for example, if the GraphQL input
@@ -14,6 +23,7 @@ pub struct Location {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Source {
     /// The graphql source text
+    #[serde(skip_serializing)]
     pub body: String,
     /// The name of the GraphQL document if applicable
     name: String,

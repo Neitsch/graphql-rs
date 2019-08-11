@@ -13,6 +13,16 @@ pub struct Location {
     pub source: Source,
 }
 
+impl Location {
+    pub fn new(start: usize, end: usize, source: &Source) -> Location {
+        Location {
+            start: start as u64,
+            end: end as u64,
+            source: source.clone(),
+        }
+    }
+}
+
 /**
  * The list of all possible AST node types.
  */
