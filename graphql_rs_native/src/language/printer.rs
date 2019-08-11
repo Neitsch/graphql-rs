@@ -24,7 +24,7 @@ mod tests {
         assert_eq!(
             print(AST::SchemaDefinition(&SchemaDefinition {
                 loc: None,
-                directives: None.into(),
+                directives: OptDirectiveVec(None),
                 operation_types: vec![OperationTypeDefinition {
                     loc: None,
                     operation: OperationType::QUERY,
@@ -58,7 +58,7 @@ mod tests {
                 variable_definitions: None.into(),
                 directives: Some(vec![Directive {
                     loc: None,
-                    arguments: None.into(),
+                    arguments: OptArgumentVec(None),
                     name: Name::new(
                         "dir".to_string(),
                         Location::new(0, 0, &Source::new("".to_owned(), None, None))
@@ -111,7 +111,7 @@ mod tests {
                             }
                         ])
                         .into(),
-                        directives: None.into(),
+                        directives: OptDirectiveVec(None),
                         selection_set: None,
                     }))]
                 }
