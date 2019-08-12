@@ -2,9 +2,9 @@ use super::ast::*;
 use super::source::Source;
 use nom::{
     branch::alt,
-    bytes::complete::{tag, take, take_till, take_while, take_while1},
+    bytes::complete::{tag, take_till, take_while, take_while1},
     character::{complete::one_of, is_alphanumeric, is_digit},
-    combinator::{map, not, opt, recognize},
+    combinator::{map, opt, recognize},
     error::{ErrorKind, ParseError},
     multi::{many0, many1, separated_list},
     sequence::{delimited, pair, preceded, separated_pair, terminated, tuple},
@@ -266,18 +266,51 @@ fn string_value<'a, E: ParseError<&'a str>>(
                 alt((
                     delimited(
                         tag("\"\"\""),
-                        recognize(terminated(
-                            many0(terminated(take(1usize), not(tag("\"\"\"")))),
-                            take(1usize),
-                        )),
+                        move |input: &'a str| {
+                            let mut cnt = 0;
+                            let mut string_parts: Vec<&'a str> = vec![];
+                            while input.len() - cnt > 0 {
+                                if &input[cnt..cnt + 3] == "\"\"\"" {
+                                    break;
+                                } else if &input[cnt..cnt + 4] == "\\\"\"\"" {
+                                    string_parts.push("\"\"\"");
+                                    cnt += 4;
+                                } else {
+                                    string_parts.push(&input[cnt..cnt + 1]);
+                                    cnt += 1;
+                                }
+                            }
+                            Ok((&input[cnt..], (Some(true), string_parts.join(""))))
+                        },
                         tag("\"\"\""),
                     ),
-                    delimited(tag("\""), take_till(|c| c == '"'), tag("\"")),
+                    delimited(
+                        tag("\""),
+                        move |input: &'a str| {
+                            let mut cnt = 0;
+                            let mut string_parts: Vec<&'a str> = vec![];
+                            while input.len() - cnt > 0 {
+                                if &input[cnt..cnt + 1] == "\"" {
+                                    break;
+                                } else if &input[cnt..cnt + 1] == "\\"
+                                    && "\"/\\bfnrt".contains(&input[cnt + 1..cnt + 2])
+                                {
+                                    string_parts.push(&input[cnt + 1..cnt + 2]);
+                                    cnt += 2;
+                                } else {
+                                    string_parts.push(&input[cnt..cnt + 1]);
+                                    cnt += 1;
+                                }
+                            }
+                            Ok((&input[cnt..], (Some(false), string_parts.join(""))))
+                        },
+                        tag("\""),
+                    ),
                 )),
-                |value: &'a str| StringValue {
-                    value: value.to_string(),
+                |(block, value)| StringValue {
+                    value,
                     loc: None,
-                    block: None,
+                    block,
                 },
             ),
             source,
@@ -1080,6 +1113,20 @@ mod tests {
     #[test]
     fn test_string_value_4() {
         let source = Source::new("\"\"\"My test text\"\"\" ".to_owned(), None, None);
+        assert_json_snapshot_matches!(string_value::<(&str, ErrorKind)>(&source)(&source.body)
+            .unwrap_or_else(|_| panic!("Test failed")));
+    }
+
+    #[test]
+    fn test_string_value_5() {
+        let source = Source::new("\" He said: \\\"Hello\\\" \" ".to_owned(), None, None);
+        assert_json_snapshot_matches!(string_value::<(&str, ErrorKind)>(&source)(&source.body)
+            .unwrap_or_else(|_| panic!("Test failed")));
+    }
+
+    #[test]
+    fn test_string_value_6() {
+        let source = Source::new("\"\"\" He said: \"Hello\" \"\"\" ".to_owned(), None, None);
         assert_json_snapshot_matches!(string_value::<(&str, ErrorKind)>(&source)(&source.body)
             .unwrap_or_else(|_| panic!("Test failed")));
     }
