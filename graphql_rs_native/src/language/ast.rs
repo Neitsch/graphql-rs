@@ -27,6 +27,32 @@ pub trait WithLocation {
     fn with_loc(&mut self, loc: Location);
 }
 
+pub trait Visitor {
+    fn visit<'a>(&self, node: AST<'a>);
+}
+
+pub trait Visitable {
+    fn visit<V: Visitor>(&self, visitor: &V);
+}
+
+impl Visitable for String {
+    fn visit<V: Visitor>(&self, _visitor: &V) {
+        
+    }
+}
+
+impl Visitable for bool {
+    fn visit<V: Visitor>(&self, _visitor: &V) {
+        
+    }
+}
+
+impl Visitable for Option<bool> {
+    fn visit<V: Visitor>(&self, _visitor: &V) {
+        
+    }
+}
+
 macro_rules! ast_node_with_location {
     ( @ $(#[$sattr:meta])* $name:ident { } -> ($($result:tt)*) ) => (
         #[serde(tag = "kind")]
@@ -54,6 +80,15 @@ macro_rules! ast_node_with_location {
 
     ( $(#[$sattr:meta])* $name:ident { $( $(#[$attr:meta])* $param:ident : $type:ty ),* $(,)* } ) => (
         ast_node_with_location!(@ $(#[$sattr])* $name { $($(#[$attr])* $param : $type,)* } -> ());
+
+        impl Visitable for $name {
+            fn visit<V: Visitor>(&self, visitor: &V) {
+                visitor.visit(self.into());
+                $(
+                    self.$param.visit(visitor);
+                )*
+            }
+        }
     );
 }
 
@@ -90,6 +125,14 @@ macro_rules! wrapping_ast_node {
                 &mut self.0
             }
         }
+
+        impl Visitable for $name {
+            fn visit<V: Visitor>(&self, visitor: &V) {
+                if let $name(Some(v)) = self {
+                    v.visit(visitor);
+                }
+            }
+        }
     };
 
     ( $name:ident ( Vec<$type:ty> )) => {
@@ -113,6 +156,45 @@ macro_rules! wrapping_ast_node {
         impl core::ops::DerefMut for $name {
             fn deref_mut(self: &'_ mut Self) -> &'_ mut Self::Target {
                 &mut self.0
+            }
+        }
+
+        impl Visitable for $name {
+            fn visit<V: Visitor>(&self, visitor: &V) {
+                for v in &self.0 {
+                    v.visit(visitor);
+                }
+            }
+        }
+    };
+
+    ( $name:ident ( $type:ty )) => {
+        #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+        pub struct $name(pub $type);
+
+        impl From<$type> for $name {
+            fn from(d: $type) -> Self {
+                $name(d)
+            }
+        }
+
+        impl core::ops::Deref for $name {
+            type Target = $type;
+
+            fn deref(self: &'_ Self) -> &'_ Self::Target {
+                &self.0
+            }
+        }
+
+        impl core::ops::DerefMut for $name {
+            fn deref_mut(self: &'_ mut Self) -> &'_ mut Self::Target {
+                &mut self.0
+            }
+        }
+
+        impl Visitable for $name {
+            fn visit<V: Visitor>(&self, visitor: &V) {
+                self.0.visit(visitor)
             }
         }
     };
@@ -143,6 +225,16 @@ macro_rules! ast_enum {
                 match self {
                     $(
                         $type::$name(x) => write!(f, "{}", x),
+                    )+
+                }
+            }
+        }
+
+        impl Visitable for $type {
+            fn visit<V: Visitor>(&self, visitor: &V) {
+                match self {
+                    $(
+                        $type::$name(v) => v.visit(visitor),
                     )+
                 }
             }
@@ -253,6 +345,8 @@ impl fmt::Display for Name {
 
 wrapping_ast_node!(OptName(Option<Name>));
 
+wrapping_ast_node!(NameVec(Vec<Name>));
+
 // Document
 ast_node_with_location!(Document {
     definitions: DefinitionVec,
@@ -324,6 +418,12 @@ pub enum OperationType {
     SUBSCRIPTION,
 }
 
+impl Visitable for OperationType {
+    fn visit<V: Visitor>(&self, _v: &V) {
+
+    }
+}
+
 impl fmt::Display for OperationType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
@@ -343,14 +443,14 @@ ast_node_with_location!(VariableDefinition {
     #[serde(rename = "type")]
     _type: Type,
     #[serde(rename = "defaultValue")]
-    default_value: Option<Value>,
+    default_value: OptValue,
     directives: OptDirectiveVec
 });
 
 impl fmt::Display for VariableDefinition {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}: {}", self.variable, self._type)?;
-        if let Some(dv) = &self.default_value {
+        if let OptValue(Some(dv)) = &self.default_value {
             write!(f, " = {}", dv)?;
         }
         if let OptDirectiveVec(Some(d)) = &self.directives {
@@ -386,8 +486,10 @@ impl fmt::Display for Variable {
 }
 
 ast_node_with_location!(SelectionSet {
-     selections: Vec<Selection>
+     selections: SelectionVec
 });
+
+wrapping_ast_node!(OptSelectionSet(Option<SelectionSet>));
 
 impl fmt::Display for SelectionSet {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -410,13 +512,15 @@ ast_enum!(Selection, {
     InlineFragment
 });
 
+wrapping_ast_node!(SelectionVec(Vec<Selection>));
+
 ast_node_with_location!(Field {
     alias: OptName,
     name: Name,
     arguments: OptArgumentVec,
     directives: OptDirectiveVec,
     #[serde(rename = "selectionSet")]
-    selection_set: Option<SelectionSet>
+    selection_set: OptSelectionSet
 });
 
 impl fmt::Display for Field {
@@ -425,7 +529,7 @@ impl fmt::Display for Field {
             write!(f, "{}: ", name,)?;
         }
         write!(f, "{}{}{}", self.name, self.arguments, self.directives)?;
-        if let Some(sel) = &self.selection_set {
+        if let OptSelectionSet(Some(sel)) = &self.selection_set {
             write!(f, " {}", sel)?;
         }
         Ok(())
@@ -480,7 +584,7 @@ impl fmt::Display for FragmentSpread {
 
 ast_node_with_location!(InlineFragment {
     #[serde(rename = "typeCondition")]
-    type_condition: Option<NamedType>,
+    type_condition: OptNamedType,
     directives: OptDirectiveVec,
     #[serde(rename = "selectionSet")]
     selection_set: SelectionSet
@@ -489,7 +593,7 @@ ast_node_with_location!(InlineFragment {
 impl fmt::Display for InlineFragment {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "...")?;
-        if let Some(tc) = &self.type_condition {
+        if let OptNamedType(Some(tc)) = &self.type_condition {
             write!(f, " on {}", tc)?;
         }
         write!(f, "{} {}", self.directives, self.selection_set)?;
@@ -705,6 +809,16 @@ ast_enum!(Type, {
 
 ast_node_with_location!(NamedType { name: Name });
 
+wrapping_ast_node!(NamedTypeVec(Vec<NamedType>));
+
+impl fmt::Display for NamedTypeVec {
+    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        panic!("Cannot format this");
+    }
+}
+
+wrapping_ast_node!(OptNamedTypeVec(Option<NamedTypeVec>));
+
 impl fmt::Display for NamedType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.name)
@@ -720,37 +834,7 @@ impl From<Name> for NamedType {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-struct OptNamedType(Option<NamedType>);
-
-impl From<Option<NamedType>> for OptNamedType {
-    fn from(d: Option<NamedType>) -> Self {
-        OptNamedType(d)
-    }
-}
-
-impl fmt::Display for OptNamedType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let OptNamedType(Some(t)) = self {
-            write!(f, "{}", t)?;
-        }
-        Ok(())
-    }
-}
-
-impl core::ops::Deref for OptNamedType {
-    type Target = Option<NamedType>;
-
-    fn deref(self: &'_ Self) -> &'_ Self::Target {
-        &self.0
-    }
-}
-
-impl core::ops::DerefMut for OptNamedType {
-    fn deref_mut(self: &'_ mut Self) -> &'_ mut Self::Target {
-        &mut self.0
-    }
-}
+wrapping_ast_node!(OptNamedType(Option<NamedType>));
 
 ast_node_with_location!(ListType {
     #[serde(rename = "type")]
@@ -872,26 +956,51 @@ impl fmt::Display for ScalarTypeDefinition {
 ast_node_with_location!(ObjectTypeDefinition {
     description: Description,
     name: Name,
-    interfaces: Option<Vec<NamedType>>,
+    interfaces: InterfaceNamedTypeVec,
     directives: OptDirectiveVec,
     fields: OptFieldDefinitionVec
 });
 
+wrapping_ast_node!(InterfaceNamedTypeVec(OptNamedTypeVec));
+
+impl From<Option<Vec<NamedType>>> for InterfaceNamedTypeVec {
+    fn from(d: Option<Vec<NamedType>>) -> Self {
+        InterfaceNamedTypeVec(OptNamedTypeVec::from(d))
+    }
+}
+
+impl From<Option<Vec<NamedType>>> for OptNamedTypeVec {
+    fn from(d: Option<Vec<NamedType>>) -> Self {
+        OptNamedTypeVec(d.map(|v| v.into()))
+    }
+}
+
 impl fmt::Display for ObjectTypeDefinition {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let interface_data = if let Some(itf) = &self.interfaces {
-            itf.iter()
-                .map(|v| format!("{}", v))
-                .collect::<Vec<String>>()
-                .join(" & ")
-        } else {
-            "".to_string()
-        };
         write!(
             f,
             "{}type {}{}{}{}",
-            self.description, self.name, interface_data, self.directives, self.fields
+            self.description, self.name, self.interfaces, self.directives, self.fields
         )
+    }
+}
+
+impl fmt::Display for InterfaceNamedTypeVec {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let InterfaceNamedTypeVec(OptNamedTypeVec(Some(itf))) = self {
+            write!(
+                f,
+                "{}",
+                itf.iter()
+                    .map(|v| format!("{}", v))
+                    .collect::<Vec<String>>()
+                    .join(" & ")
+            )
+        } else {
+            write!(
+                f, ""
+            )
+        }
     }
 }
 
@@ -1007,24 +1116,44 @@ ast_node_with_location!(UnionTypeDefinition {
     description: Description,
     name: Name,
     directives: OptDirectiveVec,
-    types: Option<Vec<NamedType>>
+    types: UnionNamedTypeVec
 });
+
+wrapping_ast_node!(UnionNamedTypeVec(OptNamedTypeVec));
+
+impl From<Option<Vec<NamedType>>> for UnionNamedTypeVec {
+    fn from(d: Option<Vec<NamedType>>) -> Self {
+        UnionNamedTypeVec(OptNamedTypeVec::from(d))
+    }
+}
 
 impl fmt::Display for UnionTypeDefinition {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let union_types = if let Some(t) = &self.types {
-            t.iter()
-                .map(|v| format!("{}", v))
-                .collect::<Vec<String>>()
-                .join(" | ")
-        } else {
-            "".to_string()
-        };
         write!(
             f,
-            "{}union {}{}{}",
-            self.description, self.name, self.directives, union_types
+            "{}union {}{} = {}",
+            self.description, self.name, self.directives, self.types
         )
+    }
+}
+
+impl fmt::Display for UnionNamedTypeVec {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>)-> fmt::Result {
+        if let UnionNamedTypeVec(OptNamedTypeVec(Some(types))) = self {
+            write!(
+                f,
+                "{}",
+                types
+                    .iter()
+                    .map(|v| format!("{}", v))
+                    .collect::<Vec<String>>()
+                    .join(" | ")
+            )
+        } else {
+            write!(
+                f, ""
+            )
+        }
     }
 }
 
@@ -1102,7 +1231,7 @@ ast_node_with_location!(DirectiveDefinition {
     description: Description,
     name: Name,
     arguments: OptInputValueDefinitionVec,
-    locations: Vec<Name>
+    locations: NameVec
 });
 
 impl fmt::Display for DirectiveDefinition {
@@ -1167,25 +1296,17 @@ impl fmt::Display for ScalarTypeExtension {
 
 ast_node_with_location!(ObjectTypeExtension {
     name: Name,
-    interfaces: Option<Vec<NamedType>>,
+    interfaces: InterfaceNamedTypeVec,
     directives: OptDirectiveVec,
     fields: OptFieldDefinitionVec
 });
 
 impl fmt::Display for ObjectTypeExtension {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let interface_data = if let Some(itf) = &self.interfaces {
-            itf.iter()
-                .map(|v| format!("{}", v))
-                .collect::<Vec<String>>()
-                .join(" & ")
-        } else {
-            "".to_string()
-        };
         write!(
             f,
             "extend type {}{}{}{}",
-            self.name, interface_data, self.directives, self.fields
+            self.name, self.interfaces, self.directives, self.fields
         )
     }
 }
@@ -1209,26 +1330,15 @@ impl fmt::Display for InterfaceTypeExtension {
 ast_node_with_location!(UnionTypeExtension {
     name: Name,
     directives: OptDirectiveVec,
-    types: Option<Vec<NamedType>>
+    types: UnionNamedTypeVec
 });
 
 impl fmt::Display for UnionTypeExtension {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let union_types = if let Some(types) = &self.types {
-            let mut val = types
-                .iter()
-                .map(|v| format!("{}", v))
-                .collect::<Vec<String>>()
-                .join(" | ");
-            val.insert_str(0, " = ");
-            val
-        } else {
-            "".to_string()
-        };
         write!(
             f,
-            "extend union {}{}{}",
-            self.name, self.directives, union_types
+            "extend union {}{} = {}",
+            self.name, self.directives, self.types
         )
     }
 }

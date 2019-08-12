@@ -115,13 +115,14 @@ fn step_into<'a>(visitor: &mut dyn Visitor<'a>, node: AST<'a>) {
             .map(|inner_node| visit(visitor, inner_node.into()))
             .collect(),
         AST::OperationDefinition(inner_node) => {
-            let dir = inner_node.directives.map(|x| x.iter()).iter();
             std::iter::empty()
             .chain(inner_node.directives.map(|x| x.iter()).iter().flatten().map(|x| x.into()))
             .map(|x| visit(visitor, x))
             .collect()
         },
-        AST::VariableDefinition(inner_node) => visitor.visit_variable_definition(inner_node),
+        AST::VariableDefinition(inner_node) => visitor.visit_variable_definition(inner_node) => {
+
+        },
         AST::Variable(inner_node) => visitor.visit_variable(inner_node),
         AST::SelectionSet(inner_node) => visitor.visit_selection_set(inner_node),
         AST::Field(inner_node) => visitor.visit_field(inner_node),
