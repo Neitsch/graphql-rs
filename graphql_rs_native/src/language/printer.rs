@@ -113,7 +113,8 @@ mod tests {
                         .into(),
                         directives: OptDirectiveVec(None),
                         selection_set: None.into(),
-                    }))].into()
+                    }))]
+                    .into()
                 }
             })),
             "query MyQuery @dir {

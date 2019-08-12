@@ -36,21 +36,15 @@ pub trait Visitable {
 }
 
 impl Visitable for String {
-    fn visit<V: Visitor>(&self, _visitor: &V) {
-        
-    }
+    fn visit<V: Visitor>(&self, _visitor: &V) {}
 }
 
 impl Visitable for bool {
-    fn visit<V: Visitor>(&self, _visitor: &V) {
-        
-    }
+    fn visit<V: Visitor>(&self, _visitor: &V) {}
 }
 
 impl Visitable for Option<bool> {
-    fn visit<V: Visitor>(&self, _visitor: &V) {
-        
-    }
+    fn visit<V: Visitor>(&self, _visitor: &V) {}
 }
 
 macro_rules! ast_node_with_location {
@@ -419,9 +413,7 @@ pub enum OperationType {
 }
 
 impl Visitable for OperationType {
-    fn visit<V: Visitor>(&self, _v: &V) {
-
-    }
+    fn visit<V: Visitor>(&self, _v: &V) {}
 }
 
 impl fmt::Display for OperationType {
@@ -486,7 +478,7 @@ impl fmt::Display for Variable {
 }
 
 ast_node_with_location!(SelectionSet {
-     selections: SelectionVec
+    selections: SelectionVec
 });
 
 wrapping_ast_node!(OptSelectionSet(Option<SelectionSet>));
@@ -997,9 +989,7 @@ impl fmt::Display for InterfaceNamedTypeVec {
                     .join(" & ")
             )
         } else {
-            write!(
-                f, ""
-            )
+            write!(f, "")
         }
     }
 }
@@ -1138,7 +1128,7 @@ impl fmt::Display for UnionTypeDefinition {
 }
 
 impl fmt::Display for UnionNamedTypeVec {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>)-> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let UnionNamedTypeVec(OptNamedTypeVec(Some(types))) = self {
             write!(
                 f,
@@ -1150,9 +1140,7 @@ impl fmt::Display for UnionNamedTypeVec {
                     .join(" | ")
             )
         } else {
-            write!(
-                f, ""
-            )
+            write!(f, "")
         }
     }
 }
