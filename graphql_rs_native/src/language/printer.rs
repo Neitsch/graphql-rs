@@ -67,7 +67,7 @@ mod tests {
                 .into(),
                 selection_set: SelectionSet {
                     loc: None,
-                    selections: vec![Selection::Field(Box::new(Field {
+                    selections: vec![Selection::Field(Field {
                         loc: None,
                         alias: Some(Name::new(
                             "my_alias".to_string(),
@@ -85,11 +85,11 @@ mod tests {
                                     "arg1".to_string(),
                                     Location::new(0, 0, &Source::new("".to_owned(), None, None))
                                 ),
-                                value: Value::StringValue(Box::new(StringValue {
+                                value: Value::StringValue(StringValue {
                                     loc: None,
                                     value: "str".to_string(),
                                     block: None,
-                                }))
+                                })
                             },
                             Argument {
                                 loc: None,
@@ -97,7 +97,7 @@ mod tests {
                                     "arg2".to_string(),
                                     Location::new(0, 0, &Source::new("".to_owned(), None, None))
                                 ),
-                                value: Value::Variable(Box::new(Variable {
+                                value: Value::Variable(Variable {
                                     loc: None,
                                     name: Name::new(
                                         "my_var".to_string(),
@@ -107,13 +107,13 @@ mod tests {
                                             &Source::new("".to_owned(), None, None)
                                         )
                                     )
-                                }))
+                                })
                             }
                         ])
                         .into(),
                         directives: OptDirectiveVec(None),
                         selection_set: None.into(),
-                    }))]
+                    })]
                     .into()
                 }
             })),

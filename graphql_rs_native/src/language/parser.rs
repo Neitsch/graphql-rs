@@ -422,15 +422,15 @@ fn value<'a, E: ParseError<&'a str>>(
 ) -> impl Fn(&'a str) -> IResult<&'a str, Value, E> {
     move |input: &'a str| {
         alt((
-            map(variable(source), |v| Value::Variable(Box::new(v))),
-            map(float_value(source), |v| Value::FloatValue(Box::new(v))),
-            map(int_value(source), |v| Value::IntValue(Box::new(v))),
-            map(string_value(source), |v| Value::StringValue(Box::new(v))),
-            map(boolean_value(source), |v| Value::BooleanValue(Box::new(v))),
-            map(null_value(source), |v| Value::NullValue(Box::new(v))),
-            map(enum_value(source), |v| Value::EnumValue(Box::new(v))),
-            map(list_value(source), |v| Value::ListValue(Box::new(v))),
-            map(object_value(source), |v| Value::ObjectValue(Box::new(v))),
+            map(variable(source), |v| Value::Variable(v)),
+            map(float_value(source), |v| Value::FloatValue(v)),
+            map(int_value(source), |v| Value::IntValue(v)),
+            map(string_value(source), |v| Value::StringValue(v)),
+            map(boolean_value(source), |v| Value::BooleanValue(v)),
+            map(null_value(source), |v| Value::NullValue(v)),
+            map(enum_value(source), |v| Value::EnumValue(v)),
+            map(list_value(source), |v| Value::ListValue(v)),
+            map(object_value(source), |v| Value::ObjectValue(v)),
         ))(input)
     }
 }
@@ -630,12 +630,12 @@ fn non_null_type<'a, E: ParseError<&'a str>>(
                     alt((
                         move |input: &'a str| {
                             map(list_type(source), |v| {
-                                NonNullInnerType::ListType(Box::new(v))
+                                NonNullInnerType::ListType(v)
                             })(input)
                         },
                         move |input: &'a str| {
                             map(named_type(source), |v| {
-                                NonNullInnerType::NamedType(Box::new(v))
+                                NonNullInnerType::NamedType(v)
                             })(input)
                         },
                     )),
@@ -656,9 +656,9 @@ fn type_node<'a, E: ParseError<&'a str>>(
 ) -> impl Fn(&'a str) -> IResult<&'a str, Type, E> {
     move |input: &'a str| {
         alt((
-            map(non_null_type(source), |v| Type::NonNullType(Box::new(v))),
-            map(list_type(source), |v| Type::ListType(Box::new(v))),
-            map(named_type(source), |v| Type::NamedType(Box::new(v))),
+            map(non_null_type(source), |v| Type::NonNullType(v)),
+            map(list_type(source), |v| Type::ListType(v)),
+            map(named_type(source), |v| Type::NamedType(v)),
         ))(input)
     }
 }

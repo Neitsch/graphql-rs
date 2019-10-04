@@ -88,7 +88,7 @@ macro_rules! ast_node_with_location {
 
 macro_rules! wrapping_ast_node {
     ( $name:ident ( Option<$type:ty> )) => {
-        #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+        #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
         pub struct $name(pub Option<$type>);
 
         impl From<Option<$type>> for $name {
@@ -200,7 +200,7 @@ macro_rules! ast_enum {
         #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
         pub enum $type {
             $(
-                $name(Box<$name>),
+                $name($name),
             )+
         }
 
@@ -237,7 +237,7 @@ macro_rules! ast_enum {
         $(
             impl From<$name> for $type {
                 fn from(v: $name) -> Self {
-                    $type::$name(Box::new(v))
+                    $type::$name(v)
                 }
             }
         )+
