@@ -1,5 +1,5 @@
 ---
-created: "2019-08-11T13:12:11.347326Z"
+created: "2019-10-27T17:29:39.195007Z"
 creator: insta@0.8.2
 source: graphql_rs_native/src/language/parser.rs
 expression: "float_value::<(&str,\n               ErrorKind)>(&source)(&source.body).unwrap_or_else(|_|\n                                                                     panic!(\"Test failed\"))"
@@ -10,14 +10,7 @@ expression: "float_value::<(&str,\n               ErrorKind)>(&source)(&source.b
     "kind": "FloatValue",
     "loc": {
       "start": 0,
-      "end": 3,
-      "source": {
-        "name": "GraphQL Request",
-        "locationOffset": {
-          "line": 1,
-          "column": 1
-        }
-      }
+      "end": 3
     },
     "value": "1.1"
   }

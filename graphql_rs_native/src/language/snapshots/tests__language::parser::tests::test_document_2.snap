@@ -1,8 +1,8 @@
 ---
-created: "2019-08-11T23:27:36.225352Z"
+created: "2019-10-27T17:29:39.198918Z"
 creator: insta@0.8.2
 source: graphql_rs_native/src/language/parser.rs
-expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    input TestInput {\\n        id: Int!\\n    }\\n\\n    type Author {\\n        id: Int!\\n        firstName: String\\n        lastName: String\\n        posts: [Post]\\n    }\\n\\n    \\\"\\\"\\\"\\n    Block comment\\n    \\\"\\\"\\\"\\n    type Post {\\n        id: Int!\\n        title: String\\n        author: Author\\n        votes: Int\\n    }\\n\\n    # the schema allows the following query:\\n    type Query {\\n        posts: [Post]\\n        author(id: Int!): Author\\n    }\\n\\n    # this schema allows the following mutation:\\n    type Mutation {\\n        upvotePost (\\n        postId: Int!\\n        orderBy: DeploymentOrder = { field: CREATED_AT direction: ASC }\\n        ): Post\\n    }\\n\\n    \\\"\\\"\\\"\\n    Collaborators affiliation level with a subject.\\n    \\\"\\\"\\\"\\n    enum CollaboratorAffiliation {\\n      \\\"\\\"\\\"\\n      All collaborators the authenticated user can see.\\n      \\\"\\\"\\\"\\n      ALL\\n\\n      \\\"\\\"\\\"\\n      All collaborators with permissions to an organization-owned subject, regardless of organization membership status.\\n      \\\"\\\"\\\"\\n      DIRECT\\n\\n      \\\"\\\"\\\"\\n      All outside collaborators of an organization-owned subject.\\n      \\\"\\\"\\\"\\n      OUTSIDE\\n    }\\n            \".to_owned(),\n                                     None,\n                                     None)).unwrap_or_else(|_|\n                                                               panic!(\"Test failed\"))"
+expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\n    input TestInput {\n        id: Int!\n    }\n\n    type Author {\n        id: Int!\n        firstName: String\n        lastName: String\n        posts: [Post]\n    }\n\n    \\\"\\\"\\\"\n    Block comment\n    \\\"\\\"\\\"\n    type Post {\n        id: Int!\n        title: String\n        author: Author\n        votes: Int\n    }\n\n    # the schema allows the following query:\n    type Query {\n        posts: [Post]\n        author(id: Int!): Author\n    }\n\n    # this schema allows the following mutation:\n    type Mutation {\n        upvotePost (\n        postId: Int!\n        orderBy: DeploymentOrder = { field: CREATED_AT direction: ASC }\n        ): Post\n    }\n\n    \\\"\\\"\\\"\n    Collaborators affiliation level with a subject.\n    \\\"\\\"\\\"\n    enum CollaboratorAffiliation {\n      \\\"\\\"\\\"\n      All collaborators the authenticated user can see.\n      \\\"\\\"\\\"\n      ALL\n\n      \\\"\\\"\\\"\n      All collaborators with permissions to an organization-owned subject, regardless of organization membership status.\n      \\\"\\\"\\\"\n      DIRECT\n\n      \\\"\\\"\\\"\n      All outside collaborators of an organization-owned subject.\n      \\\"\\\"\\\"\n      OUTSIDE\n    }\n            \".to_owned(),\n                                     None,\n                                     None)).unwrap_or_else(|_|\n                                                               panic!(\"Test failed\"))"
 ---
 [
   "",
@@ -10,14 +10,7 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
     "kind": "Document",
     "loc": {
       "start": 5,
-      "end": 1093,
-      "source": {
-        "name": "GraphQL Request",
-        "locationOffset": {
-          "line": 1,
-          "column": 1
-        }
-      }
+      "end": 1093
     },
     "definitions": [
       {
@@ -27,28 +20,14 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
         "kind": "InputObjectTypeDefinition",
         "loc": {
           "start": 5,
-          "end": 51,
-          "source": {
-            "name": "GraphQL Request",
-            "locationOffset": {
-              "line": 1,
-              "column": 1
-            }
-          }
+          "end": 51
         },
         "description": null,
         "name": {
           "kind": "Name",
           "loc": {
             "start": 11,
-            "end": 20,
-            "source": {
-              "name": "GraphQL Request",
-              "locationOffset": {
-                "line": 1,
-                "column": 1
-              }
-            }
+            "end": 20
           },
           "value": "TestInput"
         },
@@ -58,28 +37,14 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
             "kind": "InputValueDefinition",
             "loc": {
               "start": 31,
-              "end": 44,
-              "source": {
-                "name": "GraphQL Request",
-                "locationOffset": {
-                  "line": 1,
-                  "column": 1
-                }
-              }
+              "end": 44
             },
             "description": null,
             "name": {
               "kind": "Name",
               "loc": {
                 "start": 31,
-                "end": 33,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 33
               },
               "value": "id"
             },
@@ -88,41 +53,20 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
               "kind": "NonNullType",
               "loc": {
                 "start": 35,
-                "end": 44,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 44
               },
               "type": {
                 "kind": "NamedType",
                 "kind": "NamedType",
                 "loc": {
                   "start": 35,
-                  "end": 38,
-                  "source": {
-                    "name": "GraphQL Request",
-                    "locationOffset": {
-                      "line": 1,
-                      "column": 1
-                    }
-                  }
+                  "end": 38
                 },
                 "name": {
                   "kind": "Name",
                   "loc": {
                     "start": 35,
-                    "end": 38,
-                    "source": {
-                      "name": "GraphQL Request",
-                      "locationOffset": {
-                        "line": 1,
-                        "column": 1
-                      }
-                    }
+                    "end": 38
                   },
                   "value": "Int"
                 }
@@ -140,28 +84,14 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
         "kind": "ObjectTypeDefinition",
         "loc": {
           "start": 51,
-          "end": 166,
-          "source": {
-            "name": "GraphQL Request",
-            "locationOffset": {
-              "line": 1,
-              "column": 1
-            }
-          }
+          "end": 166
         },
         "description": null,
         "name": {
           "kind": "Name",
           "loc": {
             "start": 56,
-            "end": 62,
-            "source": {
-              "name": "GraphQL Request",
-              "locationOffset": {
-                "line": 1,
-                "column": 1
-              }
-            }
+            "end": 62
           },
           "value": "Author"
         },
@@ -172,28 +102,14 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
             "kind": "FieldDefinition",
             "loc": {
               "start": 73,
-              "end": 90,
-              "source": {
-                "name": "GraphQL Request",
-                "locationOffset": {
-                  "line": 1,
-                  "column": 1
-                }
-              }
+              "end": 90
             },
             "description": null,
             "name": {
               "kind": "Name",
               "loc": {
                 "start": 73,
-                "end": 75,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 75
               },
               "value": "id"
             },
@@ -203,41 +119,20 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
               "kind": "NonNullType",
               "loc": {
                 "start": 77,
-                "end": 90,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 90
               },
               "type": {
                 "kind": "NamedType",
                 "kind": "NamedType",
                 "loc": {
                   "start": 77,
-                  "end": 80,
-                  "source": {
-                    "name": "GraphQL Request",
-                    "locationOffset": {
-                      "line": 1,
-                      "column": 1
-                    }
-                  }
+                  "end": 80
                 },
                 "name": {
                   "kind": "Name",
                   "loc": {
                     "start": 77,
-                    "end": 80,
-                    "source": {
-                      "name": "GraphQL Request",
-                      "locationOffset": {
-                        "line": 1,
-                        "column": 1
-                      }
-                    }
+                    "end": 80
                   },
                   "value": "Int"
                 }
@@ -249,28 +144,14 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
             "kind": "FieldDefinition",
             "loc": {
               "start": 90,
-              "end": 107,
-              "source": {
-                "name": "GraphQL Request",
-                "locationOffset": {
-                  "line": 1,
-                  "column": 1
-                }
-              }
+              "end": 107
             },
             "description": null,
             "name": {
               "kind": "Name",
               "loc": {
                 "start": 90,
-                "end": 99,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 99
               },
               "value": "firstName"
             },
@@ -280,27 +161,13 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
               "kind": "NamedType",
               "loc": {
                 "start": 101,
-                "end": 107,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 107
               },
               "name": {
                 "kind": "Name",
                 "loc": {
                   "start": 101,
-                  "end": 107,
-                  "source": {
-                    "name": "GraphQL Request",
-                    "locationOffset": {
-                      "line": 1,
-                      "column": 1
-                    }
-                  }
+                  "end": 107
                 },
                 "value": "String"
               }
@@ -311,28 +178,14 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
             "kind": "FieldDefinition",
             "loc": {
               "start": 116,
-              "end": 132,
-              "source": {
-                "name": "GraphQL Request",
-                "locationOffset": {
-                  "line": 1,
-                  "column": 1
-                }
-              }
+              "end": 132
             },
             "description": null,
             "name": {
               "kind": "Name",
               "loc": {
                 "start": 116,
-                "end": 124,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 124
               },
               "value": "lastName"
             },
@@ -342,27 +195,13 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
               "kind": "NamedType",
               "loc": {
                 "start": 126,
-                "end": 132,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 132
               },
               "name": {
                 "kind": "Name",
                 "loc": {
                   "start": 126,
-                  "end": 132,
-                  "source": {
-                    "name": "GraphQL Request",
-                    "locationOffset": {
-                      "line": 1,
-                      "column": 1
-                    }
-                  }
+                  "end": 132
                 },
                 "value": "String"
               }
@@ -373,28 +212,14 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
             "kind": "FieldDefinition",
             "loc": {
               "start": 141,
-              "end": 159,
-              "source": {
-                "name": "GraphQL Request",
-                "locationOffset": {
-                  "line": 1,
-                  "column": 1
-                }
-              }
+              "end": 159
             },
             "description": null,
             "name": {
               "kind": "Name",
               "loc": {
                 "start": 141,
-                "end": 146,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 146
               },
               "value": "posts"
             },
@@ -404,41 +229,20 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
               "kind": "ListType",
               "loc": {
                 "start": 148,
-                "end": 159,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 159
               },
               "type": {
                 "kind": "NamedType",
                 "kind": "NamedType",
                 "loc": {
                   "start": 149,
-                  "end": 153,
-                  "source": {
-                    "name": "GraphQL Request",
-                    "locationOffset": {
-                      "line": 1,
-                      "column": 1
-                    }
-                  }
+                  "end": 153
                 },
                 "name": {
                   "kind": "Name",
                   "loc": {
                     "start": 149,
-                    "end": 153,
-                    "source": {
-                      "name": "GraphQL Request",
-                      "locationOffset": {
-                        "line": 1,
-                        "column": 1
-                      }
-                    }
+                    "end": 153
                   },
                   "value": "Post"
                 }
@@ -455,27 +259,13 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
         "kind": "ObjectTypeDefinition",
         "loc": {
           "start": 166,
-          "end": 349,
-          "source": {
-            "name": "GraphQL Request",
-            "locationOffset": {
-              "line": 1,
-              "column": 1
-            }
-          }
+          "end": 349
         },
         "description": {
           "kind": "StringValue",
           "loc": {
             "start": 166,
-            "end": 195,
-            "source": {
-              "name": "GraphQL Request",
-              "locationOffset": {
-                "line": 1,
-                "column": 1
-              }
-            }
+            "end": 195
           },
           "value": "\n    Block comment\n    ",
           "block": true
@@ -484,14 +274,7 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
           "kind": "Name",
           "loc": {
             "start": 205,
-            "end": 209,
-            "source": {
-              "name": "GraphQL Request",
-              "locationOffset": {
-                "line": 1,
-                "column": 1
-              }
-            }
+            "end": 209
           },
           "value": "Post"
         },
@@ -502,28 +285,14 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
             "kind": "FieldDefinition",
             "loc": {
               "start": 220,
-              "end": 237,
-              "source": {
-                "name": "GraphQL Request",
-                "locationOffset": {
-                  "line": 1,
-                  "column": 1
-                }
-              }
+              "end": 237
             },
             "description": null,
             "name": {
               "kind": "Name",
               "loc": {
                 "start": 220,
-                "end": 222,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 222
               },
               "value": "id"
             },
@@ -533,41 +302,20 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
               "kind": "NonNullType",
               "loc": {
                 "start": 224,
-                "end": 237,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 237
               },
               "type": {
                 "kind": "NamedType",
                 "kind": "NamedType",
                 "loc": {
                   "start": 224,
-                  "end": 227,
-                  "source": {
-                    "name": "GraphQL Request",
-                    "locationOffset": {
-                      "line": 1,
-                      "column": 1
-                    }
-                  }
+                  "end": 227
                 },
                 "name": {
                   "kind": "Name",
                   "loc": {
                     "start": 224,
-                    "end": 227,
-                    "source": {
-                      "name": "GraphQL Request",
-                      "locationOffset": {
-                        "line": 1,
-                        "column": 1
-                      }
-                    }
+                    "end": 227
                   },
                   "value": "Int"
                 }
@@ -579,28 +327,14 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
             "kind": "FieldDefinition",
             "loc": {
               "start": 237,
-              "end": 250,
-              "source": {
-                "name": "GraphQL Request",
-                "locationOffset": {
-                  "line": 1,
-                  "column": 1
-                }
-              }
+              "end": 250
             },
             "description": null,
             "name": {
               "kind": "Name",
               "loc": {
                 "start": 237,
-                "end": 242,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 242
               },
               "value": "title"
             },
@@ -610,27 +344,13 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
               "kind": "NamedType",
               "loc": {
                 "start": 244,
-                "end": 250,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 250
               },
               "name": {
                 "kind": "Name",
                 "loc": {
                   "start": 244,
-                  "end": 250,
-                  "source": {
-                    "name": "GraphQL Request",
-                    "locationOffset": {
-                      "line": 1,
-                      "column": 1
-                    }
-                  }
+                  "end": 250
                 },
                 "value": "String"
               }
@@ -641,28 +361,14 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
             "kind": "FieldDefinition",
             "loc": {
               "start": 259,
-              "end": 273,
-              "source": {
-                "name": "GraphQL Request",
-                "locationOffset": {
-                  "line": 1,
-                  "column": 1
-                }
-              }
+              "end": 273
             },
             "description": null,
             "name": {
               "kind": "Name",
               "loc": {
                 "start": 259,
-                "end": 265,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 265
               },
               "value": "author"
             },
@@ -672,27 +378,13 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
               "kind": "NamedType",
               "loc": {
                 "start": 267,
-                "end": 273,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 273
               },
               "name": {
                 "kind": "Name",
                 "loc": {
                   "start": 267,
-                  "end": 273,
-                  "source": {
-                    "name": "GraphQL Request",
-                    "locationOffset": {
-                      "line": 1,
-                      "column": 1
-                    }
-                  }
+                  "end": 273
                 },
                 "value": "Author"
               }
@@ -703,28 +395,14 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
             "kind": "FieldDefinition",
             "loc": {
               "start": 282,
-              "end": 292,
-              "source": {
-                "name": "GraphQL Request",
-                "locationOffset": {
-                  "line": 1,
-                  "column": 1
-                }
-              }
+              "end": 292
             },
             "description": null,
             "name": {
               "kind": "Name",
               "loc": {
                 "start": 282,
-                "end": 287,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 287
               },
               "value": "votes"
             },
@@ -734,27 +412,13 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
               "kind": "NamedType",
               "loc": {
                 "start": 289,
-                "end": 292,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 292
               },
               "name": {
                 "kind": "Name",
                 "loc": {
                   "start": 289,
-                  "end": 292,
-                  "source": {
-                    "name": "GraphQL Request",
-                    "locationOffset": {
-                      "line": 1,
-                      "column": 1
-                    }
-                  }
+                  "end": 292
                 },
                 "value": "Int"
               }
@@ -770,28 +434,14 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
         "kind": "ObjectTypeDefinition",
         "loc": {
           "start": 349,
-          "end": 477,
-          "source": {
-            "name": "GraphQL Request",
-            "locationOffset": {
-              "line": 1,
-              "column": 1
-            }
-          }
+          "end": 477
         },
         "description": null,
         "name": {
           "kind": "Name",
           "loc": {
             "start": 354,
-            "end": 359,
-            "source": {
-              "name": "GraphQL Request",
-              "locationOffset": {
-                "line": 1,
-                "column": 1
-              }
-            }
+            "end": 359
           },
           "value": "Query"
         },
@@ -802,28 +452,14 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
             "kind": "FieldDefinition",
             "loc": {
               "start": 370,
-              "end": 392,
-              "source": {
-                "name": "GraphQL Request",
-                "locationOffset": {
-                  "line": 1,
-                  "column": 1
-                }
-              }
+              "end": 392
             },
             "description": null,
             "name": {
               "kind": "Name",
               "loc": {
                 "start": 370,
-                "end": 375,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 375
               },
               "value": "posts"
             },
@@ -833,41 +469,20 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
               "kind": "ListType",
               "loc": {
                 "start": 377,
-                "end": 392,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 392
               },
               "type": {
                 "kind": "NamedType",
                 "kind": "NamedType",
                 "loc": {
                   "start": 378,
-                  "end": 382,
-                  "source": {
-                    "name": "GraphQL Request",
-                    "locationOffset": {
-                      "line": 1,
-                      "column": 1
-                    }
-                  }
+                  "end": 382
                 },
                 "name": {
                   "kind": "Name",
                   "loc": {
                     "start": 378,
-                    "end": 382,
-                    "source": {
-                      "name": "GraphQL Request",
-                      "locationOffset": {
-                        "line": 1,
-                        "column": 1
-                      }
-                    }
+                    "end": 382
                   },
                   "value": "Post"
                 }
@@ -879,28 +494,14 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
             "kind": "FieldDefinition",
             "loc": {
               "start": 392,
-              "end": 416,
-              "source": {
-                "name": "GraphQL Request",
-                "locationOffset": {
-                  "line": 1,
-                  "column": 1
-                }
-              }
+              "end": 416
             },
             "description": null,
             "name": {
               "kind": "Name",
               "loc": {
                 "start": 392,
-                "end": 398,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 398
               },
               "value": "author"
             },
@@ -909,28 +510,14 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
                 "kind": "InputValueDefinition",
                 "loc": {
                   "start": 399,
-                  "end": 407,
-                  "source": {
-                    "name": "GraphQL Request",
-                    "locationOffset": {
-                      "line": 1,
-                      "column": 1
-                    }
-                  }
+                  "end": 407
                 },
                 "description": null,
                 "name": {
                   "kind": "Name",
                   "loc": {
                     "start": 399,
-                    "end": 401,
-                    "source": {
-                      "name": "GraphQL Request",
-                      "locationOffset": {
-                        "line": 1,
-                        "column": 1
-                      }
-                    }
+                    "end": 401
                   },
                   "value": "id"
                 },
@@ -939,41 +526,20 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
                   "kind": "NonNullType",
                   "loc": {
                     "start": 403,
-                    "end": 407,
-                    "source": {
-                      "name": "GraphQL Request",
-                      "locationOffset": {
-                        "line": 1,
-                        "column": 1
-                      }
-                    }
+                    "end": 407
                   },
                   "type": {
                     "kind": "NamedType",
                     "kind": "NamedType",
                     "loc": {
                       "start": 403,
-                      "end": 406,
-                      "source": {
-                        "name": "GraphQL Request",
-                        "locationOffset": {
-                          "line": 1,
-                          "column": 1
-                        }
-                      }
+                      "end": 406
                     },
                     "name": {
                       "kind": "Name",
                       "loc": {
                         "start": 403,
-                        "end": 406,
-                        "source": {
-                          "name": "GraphQL Request",
-                          "locationOffset": {
-                            "line": 1,
-                            "column": 1
-                          }
-                        }
+                        "end": 406
                       },
                       "value": "Int"
                     }
@@ -988,27 +554,13 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
               "kind": "NamedType",
               "loc": {
                 "start": 410,
-                "end": 416,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 416
               },
               "name": {
                 "kind": "Name",
                 "loc": {
                   "start": 410,
-                  "end": 416,
-                  "source": {
-                    "name": "GraphQL Request",
-                    "locationOffset": {
-                      "line": 1,
-                      "column": 1
-                    }
-                  }
+                  "end": 416
                 },
                 "value": "Author"
               }
@@ -1024,28 +576,14 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
         "kind": "ObjectTypeDefinition",
         "loc": {
           "start": 477,
-          "end": 634,
-          "source": {
-            "name": "GraphQL Request",
-            "locationOffset": {
-              "line": 1,
-              "column": 1
-            }
-          }
+          "end": 634
         },
         "description": null,
         "name": {
           "kind": "Name",
           "loc": {
             "start": 482,
-            "end": 490,
-            "source": {
-              "name": "GraphQL Request",
-              "locationOffset": {
-                "line": 1,
-                "column": 1
-              }
-            }
+            "end": 490
           },
           "value": "Mutation"
         },
@@ -1056,28 +594,14 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
             "kind": "FieldDefinition",
             "loc": {
               "start": 501,
-              "end": 622,
-              "source": {
-                "name": "GraphQL Request",
-                "locationOffset": {
-                  "line": 1,
-                  "column": 1
-                }
-              }
+              "end": 622
             },
             "description": null,
             "name": {
               "kind": "Name",
               "loc": {
                 "start": 501,
-                "end": 511,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 511
               },
               "value": "upvotePost"
             },
@@ -1086,28 +610,14 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
                 "kind": "InputValueDefinition",
                 "loc": {
                   "start": 522,
-                  "end": 543,
-                  "source": {
-                    "name": "GraphQL Request",
-                    "locationOffset": {
-                      "line": 1,
-                      "column": 1
-                    }
-                  }
+                  "end": 543
                 },
                 "description": null,
                 "name": {
                   "kind": "Name",
                   "loc": {
                     "start": 522,
-                    "end": 528,
-                    "source": {
-                      "name": "GraphQL Request",
-                      "locationOffset": {
-                        "line": 1,
-                        "column": 1
-                      }
-                    }
+                    "end": 528
                   },
                   "value": "postId"
                 },
@@ -1116,41 +626,20 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
                   "kind": "NonNullType",
                   "loc": {
                     "start": 530,
-                    "end": 543,
-                    "source": {
-                      "name": "GraphQL Request",
-                      "locationOffset": {
-                        "line": 1,
-                        "column": 1
-                      }
-                    }
+                    "end": 543
                   },
                   "type": {
                     "kind": "NamedType",
                     "kind": "NamedType",
                     "loc": {
                       "start": 530,
-                      "end": 533,
-                      "source": {
-                        "name": "GraphQL Request",
-                        "locationOffset": {
-                          "line": 1,
-                          "column": 1
-                        }
-                      }
+                      "end": 533
                     },
                     "name": {
                       "kind": "Name",
                       "loc": {
                         "start": 530,
-                        "end": 533,
-                        "source": {
-                          "name": "GraphQL Request",
-                          "locationOffset": {
-                            "line": 1,
-                            "column": 1
-                          }
-                        }
+                        "end": 533
                       },
                       "value": "Int"
                     }
@@ -1163,28 +652,14 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
                 "kind": "InputValueDefinition",
                 "loc": {
                   "start": 543,
-                  "end": 615,
-                  "source": {
-                    "name": "GraphQL Request",
-                    "locationOffset": {
-                      "line": 1,
-                      "column": 1
-                    }
-                  }
+                  "end": 615
                 },
                 "description": null,
                 "name": {
                   "kind": "Name",
                   "loc": {
                     "start": 543,
-                    "end": 550,
-                    "source": {
-                      "name": "GraphQL Request",
-                      "locationOffset": {
-                        "line": 1,
-                        "column": 1
-                      }
-                    }
+                    "end": 550
                   },
                   "value": "orderBy"
                 },
@@ -1193,27 +668,13 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
                   "kind": "NamedType",
                   "loc": {
                     "start": 552,
-                    "end": 567,
-                    "source": {
-                      "name": "GraphQL Request",
-                      "locationOffset": {
-                        "line": 1,
-                        "column": 1
-                      }
-                    }
+                    "end": 567
                   },
                   "name": {
                     "kind": "Name",
                     "loc": {
                       "start": 552,
-                      "end": 567,
-                      "source": {
-                        "name": "GraphQL Request",
-                        "locationOffset": {
-                          "line": 1,
-                          "column": 1
-                        }
-                      }
+                      "end": 567
                     },
                     "value": "DeploymentOrder"
                   }
@@ -1223,41 +684,20 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
                   "kind": "ObjectValue",
                   "loc": {
                     "start": 570,
-                    "end": 615,
-                    "source": {
-                      "name": "GraphQL Request",
-                      "locationOffset": {
-                        "line": 1,
-                        "column": 1
-                      }
-                    }
+                    "end": 615
                   },
                   "fields": [
                     {
                       "kind": "ObjectField",
                       "loc": {
                         "start": 572,
-                        "end": 589,
-                        "source": {
-                          "name": "GraphQL Request",
-                          "locationOffset": {
-                            "line": 1,
-                            "column": 1
-                          }
-                        }
+                        "end": 589
                       },
                       "name": {
                         "kind": "Name",
                         "loc": {
                           "start": 572,
-                          "end": 577,
-                          "source": {
-                            "name": "GraphQL Request",
-                            "locationOffset": {
-                              "line": 1,
-                              "column": 1
-                            }
-                          }
+                          "end": 577
                         },
                         "value": "field"
                       },
@@ -1266,14 +706,7 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
                         "kind": "EnumValue",
                         "loc": {
                           "start": 579,
-                          "end": 589,
-                          "source": {
-                            "name": "GraphQL Request",
-                            "locationOffset": {
-                              "line": 1,
-                              "column": 1
-                            }
-                          }
+                          "end": 589
                         },
                         "value": "CREATED_AT"
                       }
@@ -1282,27 +715,13 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
                       "kind": "ObjectField",
                       "loc": {
                         "start": 590,
-                        "end": 604,
-                        "source": {
-                          "name": "GraphQL Request",
-                          "locationOffset": {
-                            "line": 1,
-                            "column": 1
-                          }
-                        }
+                        "end": 604
                       },
                       "name": {
                         "kind": "Name",
                         "loc": {
                           "start": 590,
-                          "end": 599,
-                          "source": {
-                            "name": "GraphQL Request",
-                            "locationOffset": {
-                              "line": 1,
-                              "column": 1
-                            }
-                          }
+                          "end": 599
                         },
                         "value": "direction"
                       },
@@ -1311,14 +730,7 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
                         "kind": "EnumValue",
                         "loc": {
                           "start": 601,
-                          "end": 604,
-                          "source": {
-                            "name": "GraphQL Request",
-                            "locationOffset": {
-                              "line": 1,
-                              "column": 1
-                            }
-                          }
+                          "end": 604
                         },
                         "value": "ASC"
                       }
@@ -1333,27 +745,13 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
               "kind": "NamedType",
               "loc": {
                 "start": 618,
-                "end": 622,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 622
               },
               "name": {
                 "kind": "Name",
                 "loc": {
                   "start": 618,
-                  "end": 622,
-                  "source": {
-                    "name": "GraphQL Request",
-                    "locationOffset": {
-                      "line": 1,
-                      "column": 1
-                    }
-                  }
+                  "end": 622
                 },
                 "value": "Post"
               }
@@ -1369,27 +767,13 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
         "kind": "EnumTypeDefinition",
         "loc": {
           "start": 634,
-          "end": 1093,
-          "source": {
-            "name": "GraphQL Request",
-            "locationOffset": {
-              "line": 1,
-              "column": 1
-            }
-          }
+          "end": 1093
         },
         "description": {
           "kind": "StringValue",
           "loc": {
             "start": 634,
-            "end": 697,
-            "source": {
-              "name": "GraphQL Request",
-              "locationOffset": {
-                "line": 1,
-                "column": 1
-              }
-            }
+            "end": 697
           },
           "value": "\n    Collaborators affiliation level with a subject.\n    ",
           "block": true
@@ -1398,14 +782,7 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
           "kind": "Name",
           "loc": {
             "start": 707,
-            "end": 730,
-            "source": {
-              "name": "GraphQL Request",
-              "locationOffset": {
-                "line": 1,
-                "column": 1
-              }
-            }
+            "end": 730
           },
           "value": "CollaboratorAffiliation"
         },
@@ -1415,27 +792,13 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
             "kind": "EnumValueDefinition",
             "loc": {
               "start": 739,
-              "end": 826,
-              "source": {
-                "name": "GraphQL Request",
-                "locationOffset": {
-                  "line": 1,
-                  "column": 1
-                }
-              }
+              "end": 826
             },
             "description": {
               "kind": "StringValue",
               "loc": {
                 "start": 739,
-                "end": 808,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 808
               },
               "value": "\n      All collaborators the authenticated user can see.\n      ",
               "block": true
@@ -1444,14 +807,7 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
               "kind": "Name",
               "loc": {
                 "start": 815,
-                "end": 818,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 818
               },
               "value": "ALL"
             },
@@ -1461,27 +817,13 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
             "kind": "EnumValueDefinition",
             "loc": {
               "start": 826,
-              "end": 981,
-              "source": {
-                "name": "GraphQL Request",
-                "locationOffset": {
-                  "line": 1,
-                  "column": 1
-                }
-              }
+              "end": 981
             },
             "description": {
               "kind": "StringValue",
               "loc": {
                 "start": 826,
-                "end": 960,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 960
               },
               "value": "\n      All collaborators with permissions to an organization-owned subject, regardless of organization membership status.\n      ",
               "block": true
@@ -1490,14 +832,7 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
               "kind": "Name",
               "loc": {
                 "start": 967,
-                "end": 973,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 973
               },
               "value": "DIRECT"
             },
@@ -1507,27 +842,13 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
             "kind": "EnumValueDefinition",
             "loc": {
               "start": 981,
-              "end": 1079,
-              "source": {
-                "name": "GraphQL Request",
-                "locationOffset": {
-                  "line": 1,
-                  "column": 1
-                }
-              }
+              "end": 1079
             },
             "description": {
               "kind": "StringValue",
               "loc": {
                 "start": 981,
-                "end": 1060,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 1060
               },
               "value": "\n      All outside collaborators of an organization-owned subject.\n      ",
               "block": true
@@ -1536,14 +857,7 @@ expression: "document::<(&str,\n            ErrorKind)>(&Source::new(\"\\n    in
               "kind": "Name",
               "loc": {
                 "start": 1067,
-                "end": 1074,
-                "source": {
-                  "name": "GraphQL Request",
-                  "locationOffset": {
-                    "line": 1,
-                    "column": 1
-                  }
-                }
+                "end": 1074
               },
               "value": "OUTSIDE"
             },

@@ -1,5 +1,5 @@
 ---
-created: "2019-08-12T02:01:49.503220Z"
+created: "2019-10-27T17:29:39.299800Z"
 creator: insta@0.8.2
 source: graphql_rs_native/src/language/parser.rs
 expression: "string_value::<(&str,\n                ErrorKind)>(&source)(&source.body).unwrap_or_else(|_|\n                                                                      panic!(\"Test failed\"))"
@@ -10,14 +10,7 @@ expression: "string_value::<(&str,\n                ErrorKind)>(&source)(&source
     "kind": "StringValue",
     "loc": {
       "start": 0,
-      "end": 2,
-      "source": {
-        "name": "GraphQL Request",
-        "locationOffset": {
-          "line": 1,
-          "column": 1
-        }
-      }
+      "end": 2
     },
     "value": "",
     "block": false

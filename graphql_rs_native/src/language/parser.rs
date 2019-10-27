@@ -67,7 +67,7 @@ use nom::{
 /// //    ].into()
 /// // });
 /// ```
-pub fn parse(source: &Source) -> Document {
+pub fn parse<'a>(source: &'a Source) -> Document<'a> {
     let parse_result = document::<(&str, ErrorKind)>(&source)
         .map_err(|e| panic!("{:?}", e))
         .unwrap();
@@ -83,7 +83,7 @@ pub fn parse(source: &Source) -> Document {
 /// // let value_result = parse_value(&Source::new("NULL".to_string(), None, None));
 /// // assert_eq!(value_result, Value::NullValue(Box::new(NullValue::default())));
 /// ```
-pub fn parse_value(source: &Source) -> Value {
+pub fn parse_value<'a>(source: &'a Source) -> Value<'a> {
     let parse_result = value::<(&str, ErrorKind)>(source)(&source.body)
         .map_err(|e| panic!("{:?}", e))
         .unwrap();
@@ -99,7 +99,7 @@ pub fn parse_value(source: &Source) -> Value {
 /// // let value_result = parse_type(&Source::new("Test".to_string(), None, None));
 /// // assert_eq!(value_result, NamedType::from(Name::new("Test".into(), Location::new(0,0,&source))).into());
 /// ```
-pub fn parse_type(source: &Source) -> Type {
+pub fn parse_type<'a>(source: &'a Source) -> Type<'a> {
     let parse_result = type_node::<(&str, ErrorKind)>(source)(&source.body)
         .map_err(|e| panic!("{:?}", e))
         .unwrap();
@@ -107,19 +107,13 @@ pub fn parse_type(source: &Source) -> Type {
     parse_result.1
 }
 
-impl From<String> for Document {
-    fn from(string: String) -> Document {
-        Source::new(string, None, None).into()
+impl<'a> From<&'a Source> for Document<'a> {
+    fn from(source: &'a Source) -> Document<'a> {
+        parse(source)
     }
 }
 
-impl From<Source> for Document {
-    fn from(source: Source) -> Document {
-        parse(&source)
-    }
-}
-
-fn with_location<'a, O: WithLocation + Sized, E: ParseError<&'a str>, F>(
+fn with_location<'a, O: WithLocation<'a> + Sized, E: ParseError<&'a str>, F>(
     f: F,
     source: &'a Source,
 ) -> impl Fn(&'a str) -> IResult<&'a str, O, E>
@@ -166,7 +160,7 @@ fn graphql_tag<'a, E: ParseError<&'a str>>(
 
 fn name<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, Name, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, Name<'a>, E> {
     move |input: &'a str| {
         with_location(
             map(
@@ -183,13 +177,13 @@ fn name<'a, E: ParseError<&'a str>>(
 
 fn description<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, StringValue, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, StringValue<'a>, E> {
     move |input: &'a str| string_value(source)(input)
 }
 
 fn variable<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, Variable, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, Variable<'a>, E> {
     move |input: &'a str| {
         with_location(
             map(preceded(graphql_tag("$"), name(source)), |name| Variable {
@@ -221,7 +215,7 @@ fn exponential_part<'a, E: ParseError<&'a str>>(source: &'a str) -> IResult<&'a 
 
 fn float_value<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, FloatValue, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, FloatValue<'a>, E> {
     move |input: &'a str| {
         with_location(
             map(
@@ -245,7 +239,7 @@ fn float_value<'a, E: ParseError<&'a str>>(
 
 fn int_value<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, IntValue, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, IntValue<'a>, E> {
     move |input: &'a str| {
         with_location(
             map(recognize(integer_part), |val| IntValue {
@@ -259,7 +253,7 @@ fn int_value<'a, E: ParseError<&'a str>>(
 
 fn string_value<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, StringValue, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, StringValue<'a>, E> {
     move |input: &'a str| {
         with_location(
             map(
@@ -270,14 +264,35 @@ fn string_value<'a, E: ParseError<&'a str>>(
                             let mut cnt = 0;
                             let mut string_parts: Vec<&'a str> = vec![];
                             while input.len() - cnt > 0 {
-                                if &input[cnt..cnt + 3] == "\"\"\"" {
+                                if &input[cnt..]
+                                    .chars()
+                                    .take(3)
+                                    .collect::<Vec<char>>()
+                                    .iter()
+                                    .collect::<String>()
+                                    == "\"\"\""
+                                {
                                     break;
-                                } else if &input[cnt..cnt + 4] == "\\\"\"\"" {
+                                } else if &input[cnt..]
+                                    .chars()
+                                    .take(4)
+                                    .collect::<Vec<char>>()
+                                    .iter()
+                                    .collect::<String>()
+                                    == "\\\"\"\""
+                                {
                                     string_parts.push("\"\"\"");
                                     cnt += 4;
                                 } else {
-                                    string_parts.push(&input[cnt..cnt + 1]);
-                                    cnt += 1;
+                                    let l = input[cnt..]
+                                        .chars()
+                                        .take(1)
+                                        .collect::<Vec<char>>()
+                                        .iter()
+                                        .collect::<String>()
+                                        .len();
+                                    string_parts.push(&input[cnt..cnt + l]);
+                                    cnt += l;
                                 }
                             }
                             Ok((&input[cnt..], (Some(true), string_parts.join(""))))
@@ -290,16 +305,52 @@ fn string_value<'a, E: ParseError<&'a str>>(
                             let mut cnt = 0;
                             let mut string_parts: Vec<&'a str> = vec![];
                             while input.len() - cnt > 0 {
-                                if &input[cnt..cnt + 1] == "\"" {
-                                    break;
-                                } else if &input[cnt..cnt + 1] == "\\"
-                                    && "\"/\\bfnrt".contains(&input[cnt + 1..cnt + 2])
+                                if &input[cnt..]
+                                    .chars()
+                                    .take(1)
+                                    .collect::<Vec<char>>()
+                                    .iter()
+                                    .collect::<String>()
+                                    == "\""
                                 {
-                                    string_parts.push(&input[cnt + 1..cnt + 2]);
-                                    cnt += 2;
+                                    break;
+                                } else if &input[cnt..]
+                                    .chars()
+                                    .take(1)
+                                    .collect::<Vec<char>>()
+                                    .iter()
+                                    .collect::<String>()
+                                    == "\\"
+                                    && "\"/\\bfnrt".contains(
+                                        &input[cnt..]
+                                            .chars()
+                                            .skip(1)
+                                            .take(1)
+                                            .collect::<Vec<char>>()
+                                            .iter()
+                                            .collect::<String>(),
+                                    )
+                                {
+                                    let l = input[cnt..]
+                                        .chars()
+                                        .skip(1)
+                                        .take(1)
+                                        .collect::<Vec<char>>()
+                                        .iter()
+                                        .collect::<String>()
+                                        .len();
+                                    string_parts.push(&input[cnt + 1..cnt + l]);
+                                    cnt += l;
                                 } else {
-                                    string_parts.push(&input[cnt..cnt + 1]);
-                                    cnt += 1;
+                                    let l = input[cnt..]
+                                        .chars()
+                                        .take(1)
+                                        .collect::<Vec<char>>()
+                                        .iter()
+                                        .collect::<String>()
+                                        .len();
+                                    string_parts.push(&input[cnt..cnt + l]);
+                                    cnt += l;
                                 }
                             }
                             Ok((&input[cnt..], (Some(false), string_parts.join(""))))
@@ -320,7 +371,7 @@ fn string_value<'a, E: ParseError<&'a str>>(
 
 fn boolean_value<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, BooleanValue, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, BooleanValue<'a>, E> {
     move |input: &'a str| {
         with_location(
             map(
@@ -337,7 +388,7 @@ fn boolean_value<'a, E: ParseError<&'a str>>(
 
 fn null_value<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, NullValue, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, NullValue<'a>, E> {
     move |input: &'a str| {
         with_location(map(tag("NULL"), |_| NullValue { loc: None }), source)(input)
     }
@@ -345,7 +396,7 @@ fn null_value<'a, E: ParseError<&'a str>>(
 
 fn enum_value<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, EnumValue, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, EnumValue<'a>, E> {
     move |input: &'a str| {
         with_location(
             map(name(source), |v| EnumValue {
@@ -359,7 +410,7 @@ fn enum_value<'a, E: ParseError<&'a str>>(
 
 fn list_value<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, ListValue, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, ListValue<'a>, E> {
     move |input: &'a str| {
         with_location(
             map(
@@ -380,7 +431,7 @@ fn list_value<'a, E: ParseError<&'a str>>(
 
 fn object_field<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, ObjectField, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, ObjectField<'a>, E> {
     move |input: &'a str| {
         with_location(
             map(
@@ -398,7 +449,7 @@ fn object_field<'a, E: ParseError<&'a str>>(
 
 fn object_value<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, ObjectValue, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, ObjectValue<'a>, E> {
     move |input: &'a str| {
         with_location(
             map(
@@ -419,7 +470,7 @@ fn object_value<'a, E: ParseError<&'a str>>(
 
 fn value<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, Value, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, Value<'a>, E> {
     move |input: &'a str| {
         alt((
             map(variable(source), |v| Value::Variable(v)),
@@ -437,7 +488,7 @@ fn value<'a, E: ParseError<&'a str>>(
 
 fn argument<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, Argument, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, Argument<'a>, E> {
     move |input: &'a str| {
         with_location(
             map(
@@ -455,7 +506,7 @@ fn argument<'a, E: ParseError<&'a str>>(
 
 fn arguments<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, Vec<Argument>, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, Vec<Argument<'a>>, E> {
     move |input: &'a str| {
         preceded(
             graphql_tag("("),
@@ -469,7 +520,7 @@ fn arguments<'a, E: ParseError<&'a str>>(
 
 fn directive<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, Directive, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, Directive<'a>, E> {
     move |input: &'a str| {
         with_location(
             map(
@@ -487,7 +538,7 @@ fn directive<'a, E: ParseError<&'a str>>(
 
 fn directives<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, Vec<Directive>, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, Vec<Directive<'a>>, E> {
     move |input: &'a str| many1(directive(source))(input)
 }
 
@@ -503,7 +554,7 @@ fn operation_type<'a, E: ParseError<&'a str>>(
 
 fn named_type<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, NamedType, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, NamedType<'a>, E> {
     move |input: &'a str| {
         with_location(
             map(name(source), |name| NamedType { loc: None, name }),
@@ -514,7 +565,7 @@ fn named_type<'a, E: ParseError<&'a str>>(
 
 fn root_operation_type_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, OperationTypeDefinition, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, OperationTypeDefinition<'a>, E> {
     move |input: &'a str| {
         with_location(
             map(
@@ -532,7 +583,7 @@ fn root_operation_type_definition<'a, E: ParseError<&'a str>>(
 
 fn schema_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, SchemaDefinition, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, SchemaDefinition<'a>, E> {
     move |input: &'a str| {
         with_location(
             map(
@@ -562,7 +613,7 @@ fn schema_definition<'a, E: ParseError<&'a str>>(
 
 fn directive_locations<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, Vec<Name>, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, Vec<Name<'a>>, E> {
     move |input_outer: &'a str| {
         preceded(
             opt(graphql_tag("|")),
@@ -596,13 +647,13 @@ fn directive_locations<'a, E: ParseError<&'a str>>(
 
 fn default_value<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, Value, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, Value<'a>, E> {
     move |input: &'a str| preceded(graphql_tag("="), value(source))(input)
 }
 
 fn list_type<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, ListType, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, ListType<'a>, E> {
     move |input: &'a str| {
         with_location(
             map(
@@ -622,21 +673,17 @@ fn list_type<'a, E: ParseError<&'a str>>(
 
 fn non_null_type<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, NonNullType, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, NonNullType<'a>, E> {
     move |input: &'a str| {
         with_location(
             map(
                 terminated(
                     alt((
                         move |input: &'a str| {
-                            map(list_type(source), |v| {
-                                NonNullInnerType::ListType(v)
-                            })(input)
+                            map(list_type(source), |v| NonNullInnerType::ListType(v))(input)
                         },
                         move |input: &'a str| {
-                            map(named_type(source), |v| {
-                                NonNullInnerType::NamedType(v)
-                            })(input)
+                            map(named_type(source), |v| NonNullInnerType::NamedType(v))(input)
                         },
                     )),
                     graphql_tag("!"),
@@ -653,7 +700,7 @@ fn non_null_type<'a, E: ParseError<&'a str>>(
 
 fn type_node<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, Type, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, Type<'a>, E> {
     move |input: &'a str| {
         alt((
             map(non_null_type(source), |v| Type::NonNullType(v)),
@@ -665,7 +712,7 @@ fn type_node<'a, E: ParseError<&'a str>>(
 
 fn input_value_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, InputValueDefinition, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, InputValueDefinition<'a>, E> {
     move |input: &'a str| {
         with_location(
             map(
@@ -692,7 +739,7 @@ fn input_value_definition<'a, E: ParseError<&'a str>>(
 
 fn argument_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, Vec<InputValueDefinition>, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, Vec<InputValueDefinition<'a>>, E> {
     move |input: &'a str| {
         preceded(
             graphql_tag("("),
@@ -706,7 +753,7 @@ fn argument_definition<'a, E: ParseError<&'a str>>(
 
 fn directive_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, DirectiveDefinition, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, DirectiveDefinition<'a>, E> {
     move |input: &'a str| {
         with_location(
             map(
@@ -734,7 +781,7 @@ fn directive_definition<'a, E: ParseError<&'a str>>(
 
 fn union_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, UnionTypeDefinition, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, UnionTypeDefinition<'a>, E> {
     move |input: &'a str| {
         with_location(
             map(
@@ -768,7 +815,7 @@ fn union_definition<'a, E: ParseError<&'a str>>(
 
 fn scalar_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, ScalarTypeDefinition, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, ScalarTypeDefinition<'a>, E> {
     move |input: &'a str| {
         with_location(
             map(
@@ -791,7 +838,7 @@ fn scalar_definition<'a, E: ParseError<&'a str>>(
 
 fn field_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, FieldDefinition, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, FieldDefinition<'a>, E> {
     move |input: &'a str| {
         with_location(
             map(
@@ -818,7 +865,7 @@ fn field_definition<'a, E: ParseError<&'a str>>(
 
 fn fields_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, Vec<FieldDefinition>, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, Vec<FieldDefinition<'a>>, E> {
     move |input: &'a str| {
         preceded(
             graphql_tag("{"),
@@ -832,7 +879,7 @@ fn fields_definition<'a, E: ParseError<&'a str>>(
 
 fn interface_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, InterfaceTypeDefinition, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, InterfaceTypeDefinition<'a>, E> {
     move |input: &'a str| {
         with_location(
             map(
@@ -857,7 +904,7 @@ fn interface_definition<'a, E: ParseError<&'a str>>(
 
 fn input_fields_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, Vec<InputValueDefinition>, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, Vec<InputValueDefinition<'a>>, E> {
     move |input: &'a str| {
         preceded(
             graphql_tag("{"),
@@ -871,7 +918,7 @@ fn input_fields_definition<'a, E: ParseError<&'a str>>(
 
 fn input_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, InputObjectTypeDefinition, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, InputObjectTypeDefinition<'a>, E> {
     move |input: &'a str| {
         with_location(
             map(
@@ -896,7 +943,7 @@ fn input_definition<'a, E: ParseError<&'a str>>(
 
 fn object_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, ObjectTypeDefinition, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, ObjectTypeDefinition<'a>, E> {
     move |input: &'a str| {
         with_location(
             map(
@@ -929,7 +976,7 @@ fn object_definition<'a, E: ParseError<&'a str>>(
 
 fn type_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, TypeDefinition, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, TypeDefinition<'a>, E> {
     move |input: &'a str| {
         alt((
             map(object_definition(source), |graphql_object| {
@@ -956,7 +1003,7 @@ fn type_definition<'a, E: ParseError<&'a str>>(
 
 fn enum_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, EnumTypeDefinition, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, EnumTypeDefinition<'a>, E> {
     move |input: &'a str| {
         with_location(
             map(
@@ -1005,7 +1052,7 @@ fn enum_definition<'a, E: ParseError<&'a str>>(
 
 fn type_system_definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, TypeSystemDefinition, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, TypeSystemDefinition<'a>, E> {
     move |input: &'a str| {
         alt((
             map(schema_definition(source), std::convert::Into::into),
@@ -1017,11 +1064,11 @@ fn type_system_definition<'a, E: ParseError<&'a str>>(
 
 fn definition<'a, E: ParseError<&'a str>>(
     source: &'a Source,
-) -> impl Fn(&'a str) -> IResult<&'a str, Definition, E> {
+) -> impl Fn(&'a str) -> IResult<&'a str, Definition<'a>, E> {
     move |input: &'a str| map(type_system_definition(source), std::convert::Into::into)(input)
 }
 
-fn document<'a, E: ParseError<&'a str>>(source: &'a Source) -> IResult<&'a str, Document, E> {
+fn document<'a, E: ParseError<&'a str>>(source: &'a Source) -> IResult<&'a str, Document<'a>, E> {
     let document_parser = with_location(
         map(many0(definition(source)), |definitions| Document {
             definitions: definitions.into(),

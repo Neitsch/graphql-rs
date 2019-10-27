@@ -2,7 +2,7 @@ use super::source::Source;
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Location {
+pub struct Location<'a> {
     /// The character offset at which this Node begins.
     pub start: u64,
 
@@ -10,25 +10,26 @@ pub struct Location {
     pub end: u64,
 
     /// The Source document the AST represents.
-    pub source: Source,
+    #[serde(skip)]
+    pub source: Option<&'a Source>,
 }
 
-impl Location {
-    pub fn new(start: usize, end: usize, source: &Source) -> Location {
+impl<'a> Location<'a> {
+    pub fn new(start: usize, end: usize, source: &'a Source) -> Location<'a> {
         Location {
             start: start as u64,
             end: end as u64,
-            source: source.clone(),
+            source: Some(source),
         }
     }
 }
 
-pub trait WithLocation {
-    fn with_loc(&mut self, loc: Location);
+pub trait WithLocation<'a> {
+    fn with_loc(&mut self, loc: Location<'a>);
 }
 
 pub trait Visitor {
-    fn visit<'a>(&self, node: AST<'a>);
+    fn visit<'a, 'b>(&self, node: AST<'a, 'b>);
 }
 
 pub trait Visitable {
@@ -52,13 +53,13 @@ macro_rules! ast_node_with_location {
         #[serde(tag = "kind")]
         #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
         $(#[$sattr])*
-        pub struct $name {
-            pub loc: Option<Location>,
+        pub struct $name<'a> {
+            pub loc: Option<Location<'a>>,
             $($result)*
         }
 
-        impl WithLocation for $name {
-            fn with_loc(&mut self, loc: Location) {
+        impl <'a> WithLocation<'a> for $name<'a> {
+            fn with_loc(&mut self, loc: Location<'a>) {
                 self.loc = Some(loc);
             }
         }
@@ -75,7 +76,7 @@ macro_rules! ast_node_with_location {
     ( $(#[$sattr:meta])* $name:ident { $( $(#[$attr:meta])* $param:ident : $type:ty ),* $(,)* } ) => (
         ast_node_with_location!(@ $(#[$sattr])* $name { $($(#[$attr])* $param : $type,)* } -> ());
 
-        impl Visitable for $name {
+        impl <'a>Visitable for $name<'a> {
             fn visit<V: Visitor>(&self, visitor: &V) {
                 visitor.visit(self.into());
                 $(
@@ -89,15 +90,15 @@ macro_rules! ast_node_with_location {
 macro_rules! wrapping_ast_node {
     ( $name:ident ( Option<$type:ty> )) => {
         #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
-        pub struct $name(pub Option<$type>);
+        pub struct $name<'a>(pub Option<$type>);
 
-        impl From<Option<$type>> for $name {
+        impl<'a> From<Option<$type>> for $name<'a> {
             fn from(d: Option<$type>) -> Self {
                 $name(d)
             }
         }
 
-        impl fmt::Display for $name {
+        impl<'a> fmt::Display for $name<'a> {
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 if let $name(Some(name)) = &self {
                     write!(f, "{}", name)?;
@@ -106,7 +107,7 @@ macro_rules! wrapping_ast_node {
             }
         }
 
-        impl core::ops::Deref for $name {
+        impl<'a> core::ops::Deref for $name<'a> {
             type Target = Option<$type>;
 
             fn deref(self: &'_ Self) -> &'_ Self::Target {
@@ -114,13 +115,13 @@ macro_rules! wrapping_ast_node {
             }
         }
 
-        impl core::ops::DerefMut for $name {
+        impl<'a> core::ops::DerefMut for $name<'a> {
             fn deref_mut(self: &'_ mut Self) -> &'_ mut Self::Target {
                 &mut self.0
             }
         }
 
-        impl Visitable for $name {
+        impl<'a> Visitable for $name<'a> {
             fn visit<V: Visitor>(&self, visitor: &V) {
                 if let $name(Some(v)) = self {
                     v.visit(visitor);
@@ -131,15 +132,15 @@ macro_rules! wrapping_ast_node {
 
     ( $name:ident ( Vec<$type:ty> )) => {
         #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-        pub struct $name(pub Vec<$type>);
+        pub struct $name<'a>(pub Vec<$type>);
 
-        impl From<Vec<$type>> for $name {
+        impl<'a> From<Vec<$type>> for $name<'a> {
             fn from(d: Vec<$type>) -> Self {
                 $name(d)
             }
         }
 
-        impl core::ops::Deref for $name {
+        impl<'a> core::ops::Deref for $name<'a> {
             type Target = Vec<$type>;
 
             fn deref(self: &'_ Self) -> &'_ Self::Target {
@@ -147,13 +148,13 @@ macro_rules! wrapping_ast_node {
             }
         }
 
-        impl core::ops::DerefMut for $name {
+        impl<'a> core::ops::DerefMut for $name<'a> {
             fn deref_mut(self: &'_ mut Self) -> &'_ mut Self::Target {
                 &mut self.0
             }
         }
 
-        impl Visitable for $name {
+        impl<'a> Visitable for $name<'a> {
             fn visit<V: Visitor>(&self, visitor: &V) {
                 for v in &self.0 {
                     v.visit(visitor);
@@ -164,15 +165,15 @@ macro_rules! wrapping_ast_node {
 
     ( $name:ident ( $type:ty )) => {
         #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-        pub struct $name(pub $type);
+        pub struct $name<'a>(pub $type);
 
-        impl From<$type> for $name {
+        impl<'a> From<$type> for $name<'a> {
             fn from(d: $type) -> Self {
                 $name(d)
             }
         }
 
-        impl core::ops::Deref for $name {
+        impl<'a> core::ops::Deref for $name<'a> {
             type Target = $type;
 
             fn deref(self: &'_ Self) -> &'_ Self::Target {
@@ -180,13 +181,13 @@ macro_rules! wrapping_ast_node {
             }
         }
 
-        impl core::ops::DerefMut for $name {
+        impl<'a> core::ops::DerefMut for $name<'a> {
             fn deref_mut(self: &'_ mut Self) -> &'_ mut Self::Target {
                 &mut self.0
             }
         }
 
-        impl Visitable for $name {
+        impl<'a> Visitable for $name<'a> {
             fn visit<V: Visitor>(&self, visitor: &V) {
                 self.0.visit(visitor)
             }
@@ -198,14 +199,14 @@ macro_rules! ast_enum {
     ( $type:ident, { $( $name:ident ), * } ) => {
         #[serde(tag = "kind")]
         #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-        pub enum $type {
+        pub enum $type<'a> {
             $(
-                $name($name),
+                $name($name<'a>),
             )+
         }
 
-        impl<'a> From<&'a $type> for AST<'a> {
-            fn from(v: &'a $type) -> Self {
+        impl<'a, 'b> From<&'b $type<'a>> for AST<'b, 'a> {
+            fn from(v: &'b $type<'a>) -> Self {
                 match v {
                     $(
                         $type::$name(x) => AST::from(x),
@@ -214,7 +215,7 @@ macro_rules! ast_enum {
             }
         }
 
-        impl fmt::Display for $type {
+        impl <'a> fmt::Display for $type<'a> {
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 match self {
                     $(
@@ -224,7 +225,7 @@ macro_rules! ast_enum {
             }
         }
 
-        impl Visitable for $type {
+        impl <'a> Visitable for $type<'a> {
             fn visit<V: Visitor>(&self, visitor: &V) {
                 match self {
                     $(
@@ -235,8 +236,8 @@ macro_rules! ast_enum {
         }
 
         $(
-            impl From<$name> for $type {
-                fn from(v: $name) -> Self {
+            impl <'a> From<$name<'a>> for $type<'a> {
+                fn from(v: $name<'a>) -> Self {
                     $type::$name(v)
                 }
             }
@@ -247,13 +248,13 @@ macro_rules! ast_enum {
 macro_rules! ast_node_enum {
     ( $type:ident, { $( $name:ident ), * } ) => {
         #[derive(Debug, Clone, PartialEq)]
-        pub enum $type<'a> {
+        pub enum $type<'a,'b> {
             $(
-                $name(&'a $name),
+                $name(&'a $name<'b>),
             )+
         }
 
-        impl<'a> fmt::Display for $type<'a> {
+        impl<'a, 'b> fmt::Display for $type<'a, 'b> {
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 match self {
                     $(
@@ -264,8 +265,8 @@ macro_rules! ast_node_enum {
         }
 
         $(
-            impl<'a> From<&'a $name> for $type<'a> {
-                fn from(v: &'a $name) -> Self {
+            impl<'a, 'b> From<&'b $name<'a>> for $type<'b, 'a> {
+                fn from(v: &'b $name<'a>) -> Self {
                     $type::$name(v)
                 }
             }
@@ -322,8 +323,8 @@ ast_node_enum!(AST, {
 // Name
 ast_node_with_location!(Name { value: String });
 
-impl Name {
-    pub fn new(name: String, loc: Location) -> Name {
+impl<'a> Name<'a> {
+    pub fn new(name: String, loc: Location<'a>) -> Name<'a> {
         Name {
             loc: Some(loc),
             value: name,
@@ -331,22 +332,22 @@ impl Name {
     }
 }
 
-impl fmt::Display for Name {
+impl<'a> fmt::Display for Name<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.value)
     }
 }
 
-wrapping_ast_node!(OptName(Option<Name>));
+wrapping_ast_node!(OptName(Option<Name<'a>>));
 
-wrapping_ast_node!(NameVec(Vec<Name>));
+wrapping_ast_node!(NameVec(Vec<Name<'a>>));
 
 // Document
 ast_node_with_location!(Document {
-    definitions: DefinitionVec,
+    definitions: DefinitionVec<'a>,
 });
 
-impl fmt::Display for Document {
+impl fmt::Display for Document<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.definitions,)
     }
@@ -358,9 +359,9 @@ ast_enum!(Definition, {
     TypeSystemExtension
 });
 
-wrapping_ast_node!(DefinitionVec(Vec<Definition>));
+wrapping_ast_node!(DefinitionVec(Vec<Definition<'a>>));
 
-impl fmt::Display for DefinitionVec {
+impl<'a> fmt::Display for DefinitionVec<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -380,15 +381,15 @@ ast_enum!(ExecutableDefinition, {
 
 ast_node_with_location!(OperationDefinition {
     operation: OperationType,
-    name: OptName,
+    name: OptName<'a>,
     #[serde(rename = "variableDefinitions")]
-    variable_definitions: OptVariableDefinitionVec,
-    directives: OptDirectiveVec,
+    variable_definitions: OptVariableDefinitionVec<'a>,
+    directives: OptDirectiveVec<'a>,
     #[serde(rename = "selectionSet")]
-    selection_set: SelectionSet
+    selection_set: SelectionSet<'a>
 });
 
-impl fmt::Display for OperationDefinition {
+impl<'a> fmt::Display for OperationDefinition<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -431,15 +432,15 @@ impl fmt::Display for OperationType {
 }
 
 ast_node_with_location!(VariableDefinition {
-    variable: Variable,
+    variable: Variable<'a>,
     #[serde(rename = "type")]
-    _type: Type,
+    _type: Type<'a>,
     #[serde(rename = "defaultValue")]
-    default_value: OptValue,
-    directives: OptDirectiveVec
+    default_value: OptValue<'a>,
+    directives: OptDirectiveVec<'a>
 });
 
-impl fmt::Display for VariableDefinition {
+impl<'a> fmt::Display for VariableDefinition<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}: {}", self.variable, self._type)?;
         if let OptValue(Some(dv)) = &self.default_value {
@@ -452,9 +453,9 @@ impl fmt::Display for VariableDefinition {
     }
 }
 
-wrapping_ast_node!(VariableDefinitionVec(Vec<VariableDefinition>));
+wrapping_ast_node!(VariableDefinitionVec(Vec<VariableDefinition<'a>>));
 
-impl fmt::Display for VariableDefinitionVec {
+impl<'a> fmt::Display for VariableDefinitionVec<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -467,23 +468,23 @@ impl fmt::Display for VariableDefinitionVec {
     }
 }
 
-wrapping_ast_node!(OptVariableDefinitionVec(Option<VariableDefinitionVec>));
+wrapping_ast_node!(OptVariableDefinitionVec(Option<VariableDefinitionVec<'a>>));
 
-ast_node_with_location!(Variable { name: Name });
+ast_node_with_location!(Variable { name: Name<'a> });
 
-impl fmt::Display for Variable {
+impl<'a> fmt::Display for Variable<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "${}", self.name)
     }
 }
 
 ast_node_with_location!(SelectionSet {
-    selections: SelectionVec
+    selections: SelectionVec<'a>
 });
 
-wrapping_ast_node!(OptSelectionSet(Option<SelectionSet>));
+wrapping_ast_node!(OptSelectionSet(Option<SelectionSet<'a>>));
 
-impl fmt::Display for SelectionSet {
+impl<'a> fmt::Display for SelectionSet<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -504,18 +505,18 @@ ast_enum!(Selection, {
     InlineFragment
 });
 
-wrapping_ast_node!(SelectionVec(Vec<Selection>));
+wrapping_ast_node!(SelectionVec(Vec<Selection<'a>>));
 
 ast_node_with_location!(Field {
-    alias: OptName,
-    name: Name,
-    arguments: OptArgumentVec,
-    directives: OptDirectiveVec,
+    alias: OptName<'a>,
+    name: Name<'a>,
+    arguments: OptArgumentVec<'a>,
+    directives: OptDirectiveVec<'a>,
     #[serde(rename = "selectionSet")]
-    selection_set: OptSelectionSet
+    selection_set: OptSelectionSet<'a>
 });
 
-impl fmt::Display for Field {
+impl<'a> fmt::Display for Field<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let OptName(Some(name)) = &self.alias {
             write!(f, "{}: ", name,)?;
@@ -529,19 +530,19 @@ impl fmt::Display for Field {
 }
 
 ast_node_with_location!(Argument {
-    name: Name,
-    value: Value
+    name: Name<'a>,
+    value: Value<'a>
 });
 
-impl fmt::Display for Argument {
+impl<'a> fmt::Display for Argument<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}: {}", self.name, self.value)
     }
 }
 
-wrapping_ast_node!(ArgumentVec(Vec<Argument>));
+wrapping_ast_node!(ArgumentVec(Vec<Argument<'a>>));
 
-impl fmt::Display for ArgumentVec {
+impl<'a> fmt::Display for ArgumentVec<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -554,21 +555,21 @@ impl fmt::Display for ArgumentVec {
     }
 }
 
-wrapping_ast_node!(OptArgumentVec(Option<ArgumentVec>));
+wrapping_ast_node!(OptArgumentVec(Option<ArgumentVec<'a>>));
 
-impl From<Option<Vec<Argument>>> for OptArgumentVec {
-    fn from(d: Option<Vec<Argument>>) -> Self {
+impl<'a> From<Option<Vec<Argument<'a>>>> for OptArgumentVec<'a> {
+    fn from(d: Option<Vec<Argument<'a>>>) -> Self {
         OptArgumentVec(d.map(std::convert::Into::into))
     }
 }
 
 // Fragments
 ast_node_with_location!(FragmentSpread {
-    name: Name,
-    directives: OptDirectiveVec
+    name: Name<'a>,
+    directives: OptDirectiveVec<'a>
 });
 
-impl fmt::Display for FragmentSpread {
+impl<'a> fmt::Display for FragmentSpread<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "...{}{}", self.name, self.directives)
     }
@@ -576,13 +577,13 @@ impl fmt::Display for FragmentSpread {
 
 ast_node_with_location!(InlineFragment {
     #[serde(rename = "typeCondition")]
-    type_condition: OptNamedType,
-    directives: OptDirectiveVec,
+    type_condition: OptNamedType<'a>,
+    directives: OptDirectiveVec<'a>,
     #[serde(rename = "selectionSet")]
-    selection_set: SelectionSet
+    selection_set: SelectionSet<'a>
 });
 
-impl fmt::Display for InlineFragment {
+impl<'a> fmt::Display for InlineFragment<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "...")?;
         if let OptNamedType(Some(tc)) = &self.type_condition {
@@ -594,17 +595,17 @@ impl fmt::Display for InlineFragment {
 }
 
 ast_node_with_location!(FragmentDefinition {
-    name: Name,
+    name: Name<'a>,
     #[serde(rename = "variableDefinitions")]
-    variable_definitions: OptVariableDefinitionVec,
+    variable_definitions: OptVariableDefinitionVec<'a>,
     #[serde(rename = "typeCondition")]
-    type_condition: NamedType,
-    directives: OptDirectiveVec,
+    type_condition: NamedType<'a>,
+    directives: OptDirectiveVec<'a>,
     #[serde(rename = "selectionSet")]
-    selection_set: SelectionSet,
+    selection_set: SelectionSet<'a>,
 });
 
-impl fmt::Display for FragmentDefinition {
+impl<'a> fmt::Display for FragmentDefinition<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -627,11 +628,11 @@ ast_enum!(Value, {
     ObjectValue
 });
 
-wrapping_ast_node!(OptValue(Option<Value>));
+wrapping_ast_node!(OptValue(Option<Value<'a>>));
 
-wrapping_ast_node!(ValueVec(Vec<Value>));
+wrapping_ast_node!(ValueVec(Vec<Value<'a>>));
 
-impl fmt::Display for ValueVec {
+impl<'a> fmt::Display for ValueVec<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -646,7 +647,7 @@ impl fmt::Display for ValueVec {
 
 ast_node_with_location!(IntValue { value: String });
 
-impl fmt::Display for IntValue {
+impl<'a> fmt::Display for IntValue<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.value)
     }
@@ -654,7 +655,7 @@ impl fmt::Display for IntValue {
 
 ast_node_with_location!(FloatValue { value: String });
 
-impl fmt::Display for FloatValue {
+impl<'a> fmt::Display for FloatValue<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.value)
     }
@@ -665,7 +666,7 @@ ast_node_with_location!(StringValue {
     block: Option<bool>
 });
 
-impl fmt::Display for StringValue {
+impl<'a> fmt::Display for StringValue<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let delimiter = match &self.block {
             Some(true) => "\"\"\"",
@@ -675,11 +676,11 @@ impl fmt::Display for StringValue {
     }
 }
 
-wrapping_ast_node!(Description(Option<StringValue>));
+wrapping_ast_node!(Description(Option<StringValue<'a>>));
 
 ast_node_with_location!(BooleanValue { value: bool });
 
-impl fmt::Display for BooleanValue {
+impl<'a> fmt::Display for BooleanValue<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -695,7 +696,7 @@ impl fmt::Display for BooleanValue {
 
 ast_node_with_location!(NullValue {});
 
-impl fmt::Display for NullValue {
+impl<'a> fmt::Display for NullValue<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "NULL")
     }
@@ -703,44 +704,44 @@ impl fmt::Display for NullValue {
 
 ast_node_with_location!(EnumValue { value: String });
 
-impl fmt::Display for EnumValue {
+impl<'a> fmt::Display for EnumValue<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.value)
     }
 }
 
-ast_node_with_location!(ListValue { values: ValueVec });
+ast_node_with_location!(ListValue { values: ValueVec<'a> });
 
-impl fmt::Display for ListValue {
+impl<'a> fmt::Display for ListValue<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[{}]", self.values)
     }
 }
 
 ast_node_with_location!(ObjectValue {
-    fields: ObjectFieldVec
+    fields: ObjectFieldVec<'a>
 });
 
-impl fmt::Display for ObjectValue {
+impl<'a> fmt::Display for ObjectValue<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.fields)
     }
 }
 
 ast_node_with_location!(ObjectField {
-    name: Name,
-    value: Value
+    name: Name<'a>,
+    value: Value<'a>
 });
 
-impl fmt::Display for ObjectField {
+impl<'a> fmt::Display for ObjectField<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}: {}", self.name, self.value)
     }
 }
 
-wrapping_ast_node!(ObjectFieldVec(Vec<ObjectField>));
+wrapping_ast_node!(ObjectFieldVec(Vec<ObjectField<'a>>));
 
-impl fmt::Display for ObjectFieldVec {
+impl<'a> fmt::Display for ObjectFieldVec<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -755,11 +756,11 @@ impl fmt::Display for ObjectFieldVec {
 
 // Directives
 ast_node_with_location!(Directive {
-    name: Name,
-    arguments: OptArgumentVec,
+    name: Name<'a>,
+    arguments: OptArgumentVec<'a>,
 });
 
-impl fmt::Display for Directive {
+impl<'a> fmt::Display for Directive<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "@{}", self.name)?;
         if let OptArgumentVec(Some(args)) = &self.arguments {
@@ -769,9 +770,9 @@ impl fmt::Display for Directive {
     }
 }
 
-wrapping_ast_node!(DirectiveVec(Vec<Directive>));
+wrapping_ast_node!(DirectiveVec(Vec<Directive<'a>>));
 
-impl fmt::Display for DirectiveVec {
+impl<'a> fmt::Display for DirectiveVec<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -784,10 +785,10 @@ impl fmt::Display for DirectiveVec {
     }
 }
 
-wrapping_ast_node!(OptDirectiveVec(Option<DirectiveVec>));
+wrapping_ast_node!(OptDirectiveVec(Option<DirectiveVec<'a>>));
 
-impl From<Option<Vec<Directive>>> for OptDirectiveVec {
-    fn from(d: Option<Vec<Directive>>) -> Self {
+impl<'a> From<Option<Vec<Directive<'a>>>> for OptDirectiveVec<'a> {
+    fn from(d: Option<Vec<Directive<'a>>>) -> Self {
         OptDirectiveVec(d.map(std::convert::Into::into))
     }
 }
@@ -799,26 +800,26 @@ ast_enum!(Type, {
     NonNullType
 });
 
-ast_node_with_location!(NamedType { name: Name });
+ast_node_with_location!(NamedType { name: Name<'a> });
 
-wrapping_ast_node!(NamedTypeVec(Vec<NamedType>));
+wrapping_ast_node!(NamedTypeVec(Vec<NamedType<'a>>));
 
-impl fmt::Display for NamedTypeVec {
+impl<'a> fmt::Display for NamedTypeVec<'a> {
     fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
         panic!("Cannot format this");
     }
 }
 
-wrapping_ast_node!(OptNamedTypeVec(Option<NamedTypeVec>));
+wrapping_ast_node!(OptNamedTypeVec(Option<NamedTypeVec<'a>>));
 
-impl fmt::Display for NamedType {
+impl<'a> fmt::Display for NamedType<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.name)
     }
 }
 
-impl From<Name> for NamedType {
-    fn from(n: Name) -> Self {
+impl<'a> From<Name<'a>> for NamedType<'a> {
+    fn from(n: Name<'a>) -> Self {
         NamedType {
             loc: n.loc.clone(),
             name: n,
@@ -826,14 +827,14 @@ impl From<Name> for NamedType {
     }
 }
 
-wrapping_ast_node!(OptNamedType(Option<NamedType>));
+wrapping_ast_node!(OptNamedType(Option<NamedType<'a>>));
 
 ast_node_with_location!(ListType {
     #[serde(rename = "type")]
-    _type: Box<Type>,
+    _type: Box<Type<'a>>,
 });
 
-impl fmt::Display for ListType {
+impl<'a> fmt::Display for ListType<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[{}]", self._type)
     }
@@ -846,10 +847,10 @@ ast_enum!(NonNullInnerType, {
 
 ast_node_with_location!(NonNullType {
     #[serde(rename = "type")]
-    _type: NonNullInnerType
+    _type: NonNullInnerType<'a>
 });
 
-impl fmt::Display for NonNullType {
+impl<'a> fmt::Display for NonNullType<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}!", self._type)
     }
@@ -863,12 +864,12 @@ ast_enum!(TypeSystemDefinition, {
 });
 
 ast_node_with_location!(SchemaDefinition {
-    directives: OptDirectiveVec,
+    directives: OptDirectiveVec<'a>,
     #[serde(rename = "operationTypes")]
-    operation_types: OperationTypeDefinitionVec
+    operation_types: OperationTypeDefinitionVec<'a>
 });
 
-impl fmt::Display for SchemaDefinition {
+impl<'a> fmt::Display for SchemaDefinition<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let ot_formatter = format!("{}", self.operation_types);
         write!(
@@ -887,18 +888,18 @@ impl fmt::Display for SchemaDefinition {
 ast_node_with_location!(OperationTypeDefinition {
     operation: OperationType,
     #[serde(rename = "type")]
-    _type: NamedType
+    _type: NamedType<'a>
 });
 
-impl fmt::Display for OperationTypeDefinition {
+impl<'a> fmt::Display for OperationTypeDefinition<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}: {}", self.operation, self._type)
     }
 }
 
-wrapping_ast_node!(OperationTypeDefinitionVec(Vec<OperationTypeDefinition>));
+wrapping_ast_node!(OperationTypeDefinitionVec(Vec<OperationTypeDefinition<'a>>));
 
-impl fmt::Display for OperationTypeDefinitionVec {
+impl<'a> fmt::Display for OperationTypeDefinitionVec<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -911,10 +912,10 @@ impl fmt::Display for OperationTypeDefinitionVec {
     }
 }
 
-wrapping_ast_node!(OptOperationTypeDefinitionVec(Option<OperationTypeDefinitionVec>));
+wrapping_ast_node!(OptOperationTypeDefinitionVec(Option<OperationTypeDefinitionVec<'a>>));
 
-impl From<Option<Vec<OperationTypeDefinition>>> for OptOperationTypeDefinitionVec {
-    fn from(d: Option<Vec<OperationTypeDefinition>>) -> Self {
+impl<'a> From<Option<Vec<OperationTypeDefinition<'a>>>> for OptOperationTypeDefinitionVec<'a> {
+    fn from(d: Option<Vec<OperationTypeDefinition<'a>>>) -> Self {
         OptOperationTypeDefinitionVec(d.map(std::convert::Into::into))
     }
 }
@@ -930,12 +931,12 @@ ast_enum!(TypeDefinition, {
 });
 
 ast_node_with_location!(ScalarTypeDefinition {
-    description: Description,
-    name: Name,
-    directives: OptDirectiveVec
+    description: Description<'a>,
+    name: Name<'a>,
+    directives: OptDirectiveVec<'a>
 });
 
-impl fmt::Display for ScalarTypeDefinition {
+impl<'a> fmt::Display for ScalarTypeDefinition<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -946,28 +947,28 @@ impl fmt::Display for ScalarTypeDefinition {
 }
 
 ast_node_with_location!(ObjectTypeDefinition {
-    description: Description,
-    name: Name,
-    interfaces: InterfaceNamedTypeVec,
-    directives: OptDirectiveVec,
-    fields: OptFieldDefinitionVec
+    description: Description<'a>,
+    name: Name<'a>,
+    interfaces: InterfaceNamedTypeVec<'a>,
+    directives: OptDirectiveVec<'a>,
+    fields: OptFieldDefinitionVec<'a>
 });
 
-wrapping_ast_node!(InterfaceNamedTypeVec(OptNamedTypeVec));
+wrapping_ast_node!(InterfaceNamedTypeVec(OptNamedTypeVec<'a>));
 
-impl From<Option<Vec<NamedType>>> for InterfaceNamedTypeVec {
-    fn from(d: Option<Vec<NamedType>>) -> Self {
+impl<'a> From<Option<Vec<NamedType<'a>>>> for InterfaceNamedTypeVec<'a> {
+    fn from(d: Option<Vec<NamedType<'a>>>) -> Self {
         InterfaceNamedTypeVec(OptNamedTypeVec::from(d))
     }
 }
 
-impl From<Option<Vec<NamedType>>> for OptNamedTypeVec {
-    fn from(d: Option<Vec<NamedType>>) -> Self {
+impl<'a> From<Option<Vec<NamedType<'a>>>> for OptNamedTypeVec<'a> {
+    fn from(d: Option<Vec<NamedType<'a>>>) -> Self {
         OptNamedTypeVec(d.map(|v| v.into()))
     }
 }
 
-impl fmt::Display for ObjectTypeDefinition {
+impl<'a> fmt::Display for ObjectTypeDefinition<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -977,7 +978,7 @@ impl fmt::Display for ObjectTypeDefinition {
     }
 }
 
-impl fmt::Display for InterfaceNamedTypeVec {
+impl<'a> fmt::Display for InterfaceNamedTypeVec<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let InterfaceNamedTypeVec(OptNamedTypeVec(Some(itf))) = self {
             write!(
@@ -995,15 +996,15 @@ impl fmt::Display for InterfaceNamedTypeVec {
 }
 
 ast_node_with_location!(FieldDefinition {
-    description: Description,
-    name: Name,
-    arguments: OptInputValueDefinitionVec,
+    description: Description<'a>,
+    name: Name<'a>,
+    arguments: OptInputValueDefinitionVec<'a>,
     #[serde(rename = "type")]
-    _type: Type,
-    directives: OptDirectiveVec
+    _type: Type<'a>,
+    directives: OptDirectiveVec<'a>
 });
 
-impl fmt::Display for FieldDefinition {
+impl<'a> fmt::Display for FieldDefinition<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -1013,9 +1014,9 @@ impl fmt::Display for FieldDefinition {
     }
 }
 
-wrapping_ast_node!(FieldDefinitionVec(Vec<FieldDefinition>));
+wrapping_ast_node!(FieldDefinitionVec(Vec<FieldDefinition<'a>>));
 
-impl fmt::Display for FieldDefinitionVec {
+impl<'a> fmt::Display for FieldDefinitionVec<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -1028,31 +1029,31 @@ impl fmt::Display for FieldDefinitionVec {
     }
 }
 
-wrapping_ast_node!(OptFieldDefinitionVec(Option<FieldDefinitionVec>));
+wrapping_ast_node!(OptFieldDefinitionVec(Option<FieldDefinitionVec<'a>>));
 
-impl From<Option<Vec<FieldDefinition>>> for OptFieldDefinitionVec {
-    fn from(d: Option<Vec<FieldDefinition>>) -> Self {
+impl<'a> From<Option<Vec<FieldDefinition<'a>>>> for OptFieldDefinitionVec<'a> {
+    fn from(d: Option<Vec<FieldDefinition<'a>>>) -> Self {
         OptFieldDefinitionVec(d.map(std::convert::Into::into))
     }
 }
 
-impl From<Vec<FieldDefinition>> for OptFieldDefinitionVec {
-    fn from(v: Vec<FieldDefinition>) -> Self {
+impl<'a> From<Vec<FieldDefinition<'a>>> for OptFieldDefinitionVec<'a> {
+    fn from(v: Vec<FieldDefinition<'a>>) -> Self {
         Some(v).into()
     }
 }
 
 ast_node_with_location!(InputValueDefinition {
-    description: Description,
-    name: Name,
+    description: Description<'a>,
+    name: Name<'a>,
     #[serde(rename = "type")]
-    _type: Type,
+    _type: Type<'a>,
     #[serde(rename = "defaultValue")]
-    default_value: OptValue,
-    directives: OptDirectiveVec
+    default_value: OptValue<'a>,
+    directives: OptDirectiveVec<'a>
 });
 
-impl fmt::Display for InputValueDefinition {
+impl<'a> fmt::Display for InputValueDefinition<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -1062,9 +1063,9 @@ impl fmt::Display for InputValueDefinition {
     }
 }
 
-wrapping_ast_node!(InputValueDefinitionVec(Vec<InputValueDefinition>));
+wrapping_ast_node!(InputValueDefinitionVec(Vec<InputValueDefinition<'a>>));
 
-impl fmt::Display for InputValueDefinitionVec {
+impl<'a> fmt::Display for InputValueDefinitionVec<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -1077,22 +1078,22 @@ impl fmt::Display for InputValueDefinitionVec {
     }
 }
 
-wrapping_ast_node!(OptInputValueDefinitionVec(Option<InputValueDefinitionVec>));
+wrapping_ast_node!(OptInputValueDefinitionVec(Option<InputValueDefinitionVec<'a>>));
 
-impl From<Option<Vec<InputValueDefinition>>> for OptInputValueDefinitionVec {
-    fn from(d: Option<Vec<InputValueDefinition>>) -> Self {
+impl<'a> From<Option<Vec<InputValueDefinition<'a>>>> for OptInputValueDefinitionVec<'a> {
+    fn from(d: Option<Vec<InputValueDefinition<'a>>>) -> Self {
         OptInputValueDefinitionVec(d.map(std::convert::Into::into))
     }
 }
 
 ast_node_with_location!(InterfaceTypeDefinition {
-    description: Description,
-    name: Name,
-    directives: OptDirectiveVec,
-    fields: OptFieldDefinitionVec
+    description: Description<'a>,
+    name: Name<'a>,
+    directives: OptDirectiveVec<'a>,
+    fields: OptFieldDefinitionVec<'a>
 });
 
-impl fmt::Display for InterfaceTypeDefinition {
+impl<'a> fmt::Display for InterfaceTypeDefinition<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -1103,21 +1104,21 @@ impl fmt::Display for InterfaceTypeDefinition {
 }
 
 ast_node_with_location!(UnionTypeDefinition {
-    description: Description,
-    name: Name,
-    directives: OptDirectiveVec,
-    types: UnionNamedTypeVec
+    description: Description<'a>,
+    name: Name<'a>,
+    directives: OptDirectiveVec<'a>,
+    types: UnionNamedTypeVec<'a>
 });
 
-wrapping_ast_node!(UnionNamedTypeVec(OptNamedTypeVec));
+wrapping_ast_node!(UnionNamedTypeVec(OptNamedTypeVec<'a>));
 
-impl From<Option<Vec<NamedType>>> for UnionNamedTypeVec {
-    fn from(d: Option<Vec<NamedType>>) -> Self {
+impl<'a> From<Option<Vec<NamedType<'a>>>> for UnionNamedTypeVec<'a> {
+    fn from(d: Option<Vec<NamedType<'a>>>) -> Self {
         UnionNamedTypeVec(OptNamedTypeVec::from(d))
     }
 }
 
-impl fmt::Display for UnionTypeDefinition {
+impl<'a> fmt::Display for UnionTypeDefinition<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -1127,7 +1128,7 @@ impl fmt::Display for UnionTypeDefinition {
     }
 }
 
-impl fmt::Display for UnionNamedTypeVec {
+impl<'a> fmt::Display for UnionNamedTypeVec<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let UnionNamedTypeVec(OptNamedTypeVec(Some(types))) = self {
             write!(
@@ -1146,13 +1147,13 @@ impl fmt::Display for UnionNamedTypeVec {
 }
 
 ast_node_with_location!(EnumTypeDefinition {
-    description: Description,
-    name: Name,
-    directives: OptDirectiveVec,
-    values: OptEnumValueDefinitionVec
+    description: Description<'a>,
+    name: Name<'a>,
+    directives: OptDirectiveVec<'a>,
+    values: OptEnumValueDefinitionVec<'a>
 });
 
-impl fmt::Display for EnumTypeDefinition {
+impl<'a> fmt::Display for EnumTypeDefinition<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -1163,20 +1164,20 @@ impl fmt::Display for EnumTypeDefinition {
 }
 
 ast_node_with_location!(EnumValueDefinition {
-    description: Description,
-    name: Name,
-    directives: OptDirectiveVec
+    description: Description<'a>,
+    name: Name<'a>,
+    directives: OptDirectiveVec<'a>
 });
 
-impl fmt::Display for EnumValueDefinition {
+impl<'a> fmt::Display for EnumValueDefinition<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}{}{}", self.description, self.name, self.directives)
     }
 }
 
-wrapping_ast_node!(EnumValueDefinitionVec(Vec<EnumValueDefinition>));
+wrapping_ast_node!(EnumValueDefinitionVec(Vec<EnumValueDefinition<'a>>));
 
-impl fmt::Display for EnumValueDefinitionVec {
+impl<'a> fmt::Display for EnumValueDefinitionVec<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -1189,22 +1190,22 @@ impl fmt::Display for EnumValueDefinitionVec {
     }
 }
 
-wrapping_ast_node!(OptEnumValueDefinitionVec(Option<EnumValueDefinitionVec>));
+wrapping_ast_node!(OptEnumValueDefinitionVec(Option<EnumValueDefinitionVec<'a>>));
 
-impl From<Option<Vec<EnumValueDefinition>>> for OptEnumValueDefinitionVec {
-    fn from(d: Option<Vec<EnumValueDefinition>>) -> Self {
+impl<'a> From<Option<Vec<EnumValueDefinition<'a>>>> for OptEnumValueDefinitionVec<'a> {
+    fn from(d: Option<Vec<EnumValueDefinition<'a>>>) -> Self {
         OptEnumValueDefinitionVec(d.map(std::convert::Into::into))
     }
 }
 
 ast_node_with_location!(InputObjectTypeDefinition {
-    description: Description,
-    name: Name,
-    directives: OptDirectiveVec,
-    fields: OptInputValueDefinitionVec
+    description: Description<'a>,
+    name: Name<'a>,
+    directives: OptDirectiveVec<'a>,
+    fields: OptInputValueDefinitionVec<'a>
 });
 
-impl fmt::Display for InputObjectTypeDefinition {
+impl<'a> fmt::Display for InputObjectTypeDefinition<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -1216,13 +1217,13 @@ impl fmt::Display for InputObjectTypeDefinition {
 
 // Directive Definitions
 ast_node_with_location!(DirectiveDefinition {
-    description: Description,
-    name: Name,
-    arguments: OptInputValueDefinitionVec,
-    locations: NameVec
+    description: Description<'a>,
+    name: Name<'a>,
+    arguments: OptInputValueDefinitionVec<'a>,
+    locations: NameVec<'a>
 });
 
-impl fmt::Display for DirectiveDefinition {
+impl<'a> fmt::Display for DirectiveDefinition<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -1246,12 +1247,12 @@ ast_enum!(TypeSystemExtension, {
 });
 
 ast_node_with_location!(SchemaExtension {
-    directives: OptDirectiveVec,
+    directives: OptDirectiveVec<'a>,
     #[serde(rename = "operationTypes")]
-    operation_types: OptOperationTypeDefinitionVec
+    operation_types: OptOperationTypeDefinitionVec<'a>
 });
 
-impl fmt::Display for SchemaExtension {
+impl<'a> fmt::Display for SchemaExtension<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -1272,24 +1273,24 @@ ast_enum!(TypeExtension, {
 });
 
 ast_node_with_location!(ScalarTypeExtension {
-    name: Name,
-    directives: OptDirectiveVec
+    name: Name<'a>,
+    directives: OptDirectiveVec<'a>
 });
 
-impl fmt::Display for ScalarTypeExtension {
+impl<'a> fmt::Display for ScalarTypeExtension<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "extend scalar{}{}", self.name, self.directives)
     }
 }
 
 ast_node_with_location!(ObjectTypeExtension {
-    name: Name,
-    interfaces: InterfaceNamedTypeVec,
-    directives: OptDirectiveVec,
-    fields: OptFieldDefinitionVec
+    name: Name<'a>,
+    interfaces: InterfaceNamedTypeVec<'a>,
+    directives: OptDirectiveVec<'a>,
+    fields: OptFieldDefinitionVec<'a>
 });
 
-impl fmt::Display for ObjectTypeExtension {
+impl<'a> fmt::Display for ObjectTypeExtension<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -1300,12 +1301,12 @@ impl fmt::Display for ObjectTypeExtension {
 }
 
 ast_node_with_location!(InterfaceTypeExtension {
-    name: Name,
-    directives: OptDirectiveVec,
-    fields: OptFieldDefinitionVec
+    name: Name<'a>,
+    directives: OptDirectiveVec<'a>,
+    fields: OptFieldDefinitionVec<'a>
 });
 
-impl fmt::Display for InterfaceTypeExtension {
+impl<'a> fmt::Display for InterfaceTypeExtension<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -1316,12 +1317,12 @@ impl fmt::Display for InterfaceTypeExtension {
 }
 
 ast_node_with_location!(UnionTypeExtension {
-    name: Name,
-    directives: OptDirectiveVec,
-    types: UnionNamedTypeVec
+    name: Name<'a>,
+    directives: OptDirectiveVec<'a>,
+    types: UnionNamedTypeVec<'a>
 });
 
-impl fmt::Display for UnionTypeExtension {
+impl<'a> fmt::Display for UnionTypeExtension<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -1333,14 +1334,14 @@ impl fmt::Display for UnionTypeExtension {
 
 ast_node_with_location!(EnumTypeExtension {
     #[doc = "The name of the \"target\" enum"]
-    name: Name,
+    name: Name<'a>,
     #[doc = "A list of directives assigned to the enum extension"]
-    directives: OptDirectiveVec,
+    directives: OptDirectiveVec<'a>,
     #[doc = "A list of possible values to extend the enum by."]
-    values: OptEnumValueDefinitionVec
+    values: OptEnumValueDefinitionVec<'a>
 });
 
-impl fmt::Display for EnumTypeExtension {
+impl<'a> fmt::Display for EnumTypeExtension<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -1354,15 +1355,15 @@ ast_node_with_location!(
     #[doc = "An input object type extension can be used to add fields to an existing input object"]
     InputObjectTypeExtension {
         #[doc = "The name of the \"target\" input object"]
-        name: Name,
+        name: Name<'a>,
         #[doc = "A list of directives assigned to the input object extension"]
-        directives: OptDirectiveVec,
+        directives: OptDirectiveVec<'a>,
         #[doc = "A list of fields that the input object extension has"]
-        fields: OptInputValueDefinitionVec,
+        fields: OptInputValueDefinitionVec<'a>,
     }
 );
 
-impl fmt::Display for InputObjectTypeExtension {
+impl<'a> fmt::Display for InputObjectTypeExtension<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -1372,7 +1373,7 @@ impl fmt::Display for InputObjectTypeExtension {
     }
 }
 
-impl<'a, T> From<&'a Box<T>> for AST<'a> {
+impl<'a, 'b, T> From<&'a Box<T>> for AST<'a, 'b> {
     fn from(_s: &'a Box<T>) -> Self {
         panic!("hi")
     }

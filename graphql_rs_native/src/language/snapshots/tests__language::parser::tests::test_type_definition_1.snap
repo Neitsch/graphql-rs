@@ -1,5 +1,5 @@
 ---
-created: "2019-08-11T13:12:11.453868Z"
+created: "2019-10-27T17:29:39.401035Z"
 creator: insta@0.8.2
 source: graphql_rs_native/src/language/parser.rs
 expression: "type_definition::<(&str,\n                   ErrorKind)>(&source)(&source.body).unwrap_or_else(|_|\n                                                                         panic!(\"Test failed\"))"
@@ -11,28 +11,14 @@ expression: "type_definition::<(&str,\n                   ErrorKind)>(&source)(&
     "kind": "InputObjectTypeDefinition",
     "loc": {
       "start": 0,
-      "end": 10,
-      "source": {
-        "name": "GraphQL Request",
-        "locationOffset": {
-          "line": 1,
-          "column": 1
-        }
-      }
+      "end": 10
     },
     "description": null,
     "name": {
       "kind": "Name",
       "loc": {
         "start": 6,
-        "end": 10,
-        "source": {
-          "name": "GraphQL Request",
-          "locationOffset": {
-            "line": 1,
-            "column": 1
-          }
-        }
+        "end": 10
       },
       "value": "User"
     },

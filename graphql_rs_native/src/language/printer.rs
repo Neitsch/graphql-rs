@@ -1,6 +1,6 @@
 use super::ast::*;
 
-pub fn print(node: AST<'_>) -> String {
+pub fn print(node: AST<'_, '_>) -> String {
     format!("{}", node)
 }
 

@@ -1,5 +1,5 @@
 ---
-created: "2019-08-11T13:12:11.454840Z"
+created: "2019-10-27T17:29:39.400996Z"
 creator: insta@0.8.2
 source: graphql_rs_native/src/language/parser.rs
 expression: "type_system_definition::<(&str,\n                          ErrorKind)>(&source)(&source.body).unwrap_or_else(|_|\n                                                                                panic!(\"Test failed\"))"
@@ -11,14 +11,7 @@ expression: "type_system_definition::<(&str,\n                          ErrorKin
     "kind": "SchemaDefinition",
     "loc": {
       "start": 0,
-      "end": 9,
-      "source": {
-        "name": "GraphQL Request",
-        "locationOffset": {
-          "line": 1,
-          "column": 1
-        }
-      }
+      "end": 9
     },
     "directives": null,
     "operationTypes": []

@@ -1,5 +1,5 @@
 ---
-created: "2019-08-11T13:12:11.347481Z"
+created: "2019-10-27T17:29:39.194943Z"
 creator: insta@0.8.2
 source: graphql_rs_native/src/language/parser.rs
 expression: "fields_definition::<nom::error::VerboseError<&str>>(&source)(&source.body).unwrap_or_else(|_|\n                                                                                              panic!(\"Test failed\"))"
@@ -11,28 +11,14 @@ expression: "fields_definition::<nom::error::VerboseError<&str>>(&source)(&sourc
       "kind": "FieldDefinition",
       "loc": {
         "start": 1,
-        "end": 4,
-        "source": {
-          "name": "GraphQL Request",
-          "locationOffset": {
-            "line": 1,
-            "column": 1
-          }
-        }
+        "end": 4
       },
       "description": null,
       "name": {
         "kind": "Name",
         "loc": {
           "start": 1,
-          "end": 2,
-          "source": {
-            "name": "GraphQL Request",
-            "locationOffset": {
-              "line": 1,
-              "column": 1
-            }
-          }
+          "end": 2
         },
         "value": "f"
       },
@@ -42,27 +28,13 @@ expression: "fields_definition::<nom::error::VerboseError<&str>>(&source)(&sourc
         "kind": "NamedType",
         "loc": {
           "start": 3,
-          "end": 4,
-          "source": {
-            "name": "GraphQL Request",
-            "locationOffset": {
-              "line": 1,
-              "column": 1
-            }
-          }
+          "end": 4
         },
         "name": {
           "kind": "Name",
           "loc": {
             "start": 3,
-            "end": 4,
-            "source": {
-              "name": "GraphQL Request",
-              "locationOffset": {
-                "line": 1,
-                "column": 1
-              }
-            }
+            "end": 4
           },
           "value": "S"
         }
@@ -73,28 +45,14 @@ expression: "fields_definition::<nom::error::VerboseError<&str>>(&source)(&sourc
       "kind": "FieldDefinition",
       "loc": {
         "start": 5,
-        "end": 8,
-        "source": {
-          "name": "GraphQL Request",
-          "locationOffset": {
-            "line": 1,
-            "column": 1
-          }
-        }
+        "end": 8
       },
       "description": null,
       "name": {
         "kind": "Name",
         "loc": {
           "start": 5,
-          "end": 6,
-          "source": {
-            "name": "GraphQL Request",
-            "locationOffset": {
-              "line": 1,
-              "column": 1
-            }
-          }
+          "end": 6
         },
         "value": "l"
       },
@@ -104,27 +62,13 @@ expression: "fields_definition::<nom::error::VerboseError<&str>>(&source)(&sourc
         "kind": "NamedType",
         "loc": {
           "start": 7,
-          "end": 8,
-          "source": {
-            "name": "GraphQL Request",
-            "locationOffset": {
-              "line": 1,
-              "column": 1
-            }
-          }
+          "end": 8
         },
         "name": {
           "kind": "Name",
           "loc": {
             "start": 7,
-            "end": 8,
-            "source": {
-              "name": "GraphQL Request",
-              "locationOffset": {
-                "line": 1,
-                "column": 1
-              }
-            }
+            "end": 8
           },
           "value": "S"
         }

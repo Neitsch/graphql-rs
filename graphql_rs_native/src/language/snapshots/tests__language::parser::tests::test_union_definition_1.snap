@@ -1,5 +1,5 @@
 ---
-created: "2019-08-11T13:12:11.456351Z"
+created: "2019-10-27T17:29:39.401454Z"
 creator: insta@0.8.2
 source: graphql_rs_native/src/language/parser.rs
 expression: "union_definition::<nom::error::VerboseError<&str>>(&source)(&source.body).unwrap_or_else(|_|\n                                                                                             panic!(\"Test failed\"))"
@@ -10,28 +10,14 @@ expression: "union_definition::<nom::error::VerboseError<&str>>(&source)(&source
     "kind": "UnionTypeDefinition",
     "loc": {
       "start": 0,
-      "end": 34,
-      "source": {
-        "name": "GraphQL Request",
-        "locationOffset": {
-          "line": 1,
-          "column": 1
-        }
-      }
+      "end": 34
     },
     "description": null,
     "name": {
       "kind": "Name",
       "loc": {
         "start": 6,
-        "end": 13,
-        "source": {
-          "name": "GraphQL Request",
-          "locationOffset": {
-            "line": 1,
-            "column": 1
-          }
-        }
+        "end": 13
       },
       "value": "MyUnion"
     },
@@ -41,27 +27,13 @@ expression: "union_definition::<nom::error::VerboseError<&str>>(&source)(&source
         "kind": "NamedType",
         "loc": {
           "start": 16,
-          "end": 23,
-          "source": {
-            "name": "GraphQL Request",
-            "locationOffset": {
-              "line": 1,
-              "column": 1
-            }
-          }
+          "end": 23
         },
         "name": {
           "kind": "Name",
           "loc": {
             "start": 16,
-            "end": 23,
-            "source": {
-              "name": "GraphQL Request",
-              "locationOffset": {
-                "line": 1,
-                "column": 1
-              }
-            }
+            "end": 23
           },
           "value": "MemberA"
         }
@@ -70,27 +42,13 @@ expression: "union_definition::<nom::error::VerboseError<&str>>(&source)(&source
         "kind": "NamedType",
         "loc": {
           "start": 26,
-          "end": 33,
-          "source": {
-            "name": "GraphQL Request",
-            "locationOffset": {
-              "line": 1,
-              "column": 1
-            }
-          }
+          "end": 33
         },
         "name": {
           "kind": "Name",
           "loc": {
             "start": 26,
-            "end": 33,
-            "source": {
-              "name": "GraphQL Request",
-              "locationOffset": {
-                "line": 1,
-                "column": 1
-              }
-            }
+            "end": 33
           },
           "value": "MemberB"
         }
