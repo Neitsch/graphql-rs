@@ -67,7 +67,7 @@ use nom::{
 /// //    ].into()
 /// // });
 /// ```
-pub fn parse<'a>(source: &'a Source) -> Document<'a> {
+pub fn parse(source: &'_ Source) -> Document<'_> {
     let parse_result = document::<(&str, ErrorKind)>(&source)
         .map_err(|e| panic!("{:?}", e))
         .unwrap();
@@ -83,7 +83,7 @@ pub fn parse<'a>(source: &'a Source) -> Document<'a> {
 /// // let value_result = parse_value(&Source::new("NULL".to_string(), None, None));
 /// // assert_eq!(value_result, Value::NullValue(Box::new(NullValue::default())));
 /// ```
-pub fn parse_value<'a>(source: &'a Source) -> Value<'a> {
+pub fn parse_value(source: &'_ Source) -> Value<'_> {
     let parse_result = value::<(&str, ErrorKind)>(source)(&source.body)
         .map_err(|e| panic!("{:?}", e))
         .unwrap();
@@ -99,7 +99,7 @@ pub fn parse_value<'a>(source: &'a Source) -> Value<'a> {
 /// // let value_result = parse_type(&Source::new("Test".to_string(), None, None));
 /// // assert_eq!(value_result, NamedType::from(Name::new("Test".into(), Location::new(0,0,&source))).into());
 /// ```
-pub fn parse_type<'a>(source: &'a Source) -> Type<'a> {
+pub fn parse_type(source: &'_ Source) -> Type<'_> {
     let parse_result = type_node::<(&str, ErrorKind)>(source)(&source.body)
         .map_err(|e| panic!("{:?}", e))
         .unwrap();
@@ -473,15 +473,15 @@ fn value<'a, E: ParseError<&'a str>>(
 ) -> impl Fn(&'a str) -> IResult<&'a str, Value<'a>, E> {
     move |input: &'a str| {
         alt((
-            map(variable(source), |v| Value::Variable(v)),
-            map(float_value(source), |v| Value::FloatValue(v)),
-            map(int_value(source), |v| Value::IntValue(v)),
-            map(string_value(source), |v| Value::StringValue(v)),
-            map(boolean_value(source), |v| Value::BooleanValue(v)),
-            map(null_value(source), |v| Value::NullValue(v)),
-            map(enum_value(source), |v| Value::EnumValue(v)),
-            map(list_value(source), |v| Value::ListValue(v)),
-            map(object_value(source), |v| Value::ObjectValue(v)),
+            map(variable(source), Value::Variable),
+            map(float_value(source), Value::FloatValue),
+            map(int_value(source), Value::IntValue),
+            map(string_value(source), Value::StringValue),
+            map(boolean_value(source), Value::BooleanValue),
+            map(null_value(source), Value::NullValue),
+            map(enum_value(source), Value::EnumValue),
+            map(list_value(source), Value::ListValue),
+            map(object_value(source), Value::ObjectValue),
         ))(input)
     }
 }
@@ -680,10 +680,10 @@ fn non_null_type<'a, E: ParseError<&'a str>>(
                 terminated(
                     alt((
                         move |input: &'a str| {
-                            map(list_type(source), |v| NonNullInnerType::ListType(v))(input)
+                            map(list_type(source), NonNullInnerType::ListType)(input)
                         },
                         move |input: &'a str| {
-                            map(named_type(source), |v| NonNullInnerType::NamedType(v))(input)
+                            map(named_type(source), NonNullInnerType::NamedType)(input)
                         },
                     )),
                     graphql_tag("!"),
@@ -703,9 +703,9 @@ fn type_node<'a, E: ParseError<&'a str>>(
 ) -> impl Fn(&'a str) -> IResult<&'a str, Type<'a>, E> {
     move |input: &'a str| {
         alt((
-            map(non_null_type(source), |v| Type::NonNullType(v)),
-            map(list_type(source), |v| Type::ListType(v)),
-            map(named_type(source), |v| Type::NamedType(v)),
+            map(non_null_type(source), Type::NonNullType),
+            map(list_type(source), Type::ListType),
+            map(named_type(source), Type::NamedType),
         ))(input)
     }
 }

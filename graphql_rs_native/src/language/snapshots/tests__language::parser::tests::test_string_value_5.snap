@@ -1,18 +1,18 @@
 ---
-created: "2019-10-27T17:29:39.400750Z"
+created: "2019-10-29T02:55:18.510857Z"
 creator: insta@0.8.2
 source: graphql_rs_native/src/language/parser.rs
 expression: "string_value::<(&str,\n                ErrorKind)>(&source)(&source.body).unwrap_or_else(|_|\n                                                                      panic!(\"Test failed\"))"
 ---
 [
-  " ",
+  "Hello\\\" \" ",
   {
     "kind": "StringValue",
     "loc": {
       "start": 0,
-      "end": 22
+      "end": 13
     },
-    "value": " He said: \"Hello\" ",
+    "value": " He said: ",
     "block": false
   }
 ]
