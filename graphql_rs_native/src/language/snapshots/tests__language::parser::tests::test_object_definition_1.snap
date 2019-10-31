@@ -1,5 +1,5 @@
 ---
-created: "2019-10-27T17:29:39.195427Z"
+created: "2019-10-30T03:14:34.874443Z"
 creator: insta@0.8.2
 source: graphql_rs_native/src/language/parser.rs
 expression: "object_definition::<(&str,\n                     ErrorKind)>(&source)(&source.body).unwrap_or_else(|_|\n                                                                           panic!(\"Test failed\"))"

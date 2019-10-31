@@ -14,26 +14,12 @@ Object {
           "kind": "FieldDefinition",
           "loc": Object {
             "end": 24,
-            "source": Object {
-              "locationOffset": Object {
-                "column": 1,
-                "line": 1,
-              },
-              "name": "GraphQL Request",
-            },
             "start": 12,
           },
           "name": Object {
             "kind": "Name",
             "loc": Object {
               "end": 16,
-              "source": Object {
-                "locationOffset": Object {
-                  "column": 1,
-                  "line": 1,
-                },
-                "name": "GraphQL Request",
-              },
               "start": 12,
             },
             "value": "name",
@@ -42,26 +28,12 @@ Object {
             "kind": "NamedType",
             "loc": Object {
               "end": 24,
-              "source": Object {
-                "locationOffset": Object {
-                  "column": 1,
-                  "line": 1,
-                },
-                "name": "GraphQL Request",
-              },
               "start": 18,
             },
             "name": Object {
               "kind": "Name",
               "loc": Object {
                 "end": 24,
-                "source": Object {
-                  "locationOffset": Object {
-                    "column": 1,
-                    "line": 1,
-                  },
-                  "name": "GraphQL Request",
-                },
                 "start": 18,
               },
               "value": "String",
@@ -75,26 +47,12 @@ Object {
           "kind": "FieldDefinition",
           "loc": Object {
             "end": 31,
-            "source": Object {
-              "locationOffset": Object {
-                "column": 1,
-                "line": 1,
-              },
-              "name": "GraphQL Request",
-            },
             "start": 25,
           },
           "name": Object {
             "kind": "Name",
             "loc": Object {
               "end": 27,
-              "source": Object {
-                "locationOffset": Object {
-                  "column": 1,
-                  "line": 1,
-                },
-                "name": "GraphQL Request",
-              },
               "start": 25,
             },
             "value": "id",
@@ -103,26 +61,12 @@ Object {
             "kind": "NamedType",
             "loc": Object {
               "end": 31,
-              "source": Object {
-                "locationOffset": Object {
-                  "column": 1,
-                  "line": 1,
-                },
-                "name": "GraphQL Request",
-              },
               "start": 29,
             },
             "name": Object {
               "kind": "Name",
               "loc": Object {
                 "end": 31,
-                "source": Object {
-                  "locationOffset": Object {
-                    "column": 1,
-                    "line": 1,
-                  },
-                  "name": "GraphQL Request",
-                },
                 "start": 29,
               },
               "value": "ID",
@@ -134,26 +78,12 @@ Object {
       "kind": "ObjectTypeDefinition",
       "loc": Object {
         "end": 33,
-        "source": Object {
-          "locationOffset": Object {
-            "column": 1,
-            "line": 1,
-          },
-          "name": "GraphQL Request",
-        },
         "start": 0,
       },
       "name": Object {
         "kind": "Name",
         "loc": Object {
           "end": 9,
-          "source": Object {
-            "locationOffset": Object {
-              "column": 1,
-              "line": 1,
-            },
-            "name": "GraphQL Request",
-          },
           "start": 5,
         },
         "value": "User",
@@ -163,13 +93,6 @@ Object {
   "kind": "Document",
   "loc": Object {
     "end": 33,
-    "source": Object {
-      "locationOffset": Object {
-        "column": 1,
-        "line": 1,
-      },
-      "name": "GraphQL Request",
-    },
     "start": 0,
   },
 }

@@ -15,7 +15,7 @@
     "package": "node-pre-gyp package",
     "upload-binary": "node-pre-gyp package && node-pre-gyp-github publish",
     "build": "neon build",
-    "test": "jest"
+    "test": "jest --projects lib"
   },
   "repository": {
     "type": "git",

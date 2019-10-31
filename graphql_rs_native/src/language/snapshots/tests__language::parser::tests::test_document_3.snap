@@ -1,5 +1,5 @@
 ---
-created: "2019-10-27T17:29:39.194759Z"
+created: "2019-10-30T03:14:34.874238Z"
 creator: insta@0.8.2
 source: graphql_rs_native/src/language/parser.rs
 expression: "document::<nom::error::VerboseError<&str>>(&Source::new(\"type User\".to_owned(),\n                                                        None,\n                                                        None)).unwrap_or_else(|_|\n                                                                                  panic!(\"Test failed\"))"
