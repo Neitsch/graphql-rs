@@ -21,7 +21,7 @@ serde = "1.0.80"
 travis-ci = { repository = "neitsch/graphql-rs", branch = "master" }
 
 [dev-dependencies]
-criterion = "0.2"
+criterion = "0.3"
 insta = "0.8.2"
 
 [[bench]]
