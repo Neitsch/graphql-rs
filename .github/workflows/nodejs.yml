@@ -13,10 +13,10 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: '10.x'
-    - name: npm install, build, and test
+    - name: yarn install, build, and test
       run: |
-        npm ci
-        npm run build
-        npm test
+        yarn
+        yarn build
+        yarn test
       env:
         CI: true
