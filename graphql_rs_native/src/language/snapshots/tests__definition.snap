@@ -1,0 +1,18 @@
+---
+source: graphql_rs_native/src/language/parser.rs
+expression: "definition::<(&str,\n              ErrorKind)>(&source)(&source.body).unwrap_or_else(|_|\n                                                                    panic!(\"Test failed\"))"
+---
+[
+  "",
+  {
+    "kind": "TypeSystemDefinition",
+    "kind": "SchemaDefinition",
+    "kind": "SchemaDefinition",
+    "loc": {
+      "start": 0,
+      "end": 9
+    },
+    "directives": null,
+    "operationTypes": []
+  }
+]

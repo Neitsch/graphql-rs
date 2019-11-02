@@ -1,0 +1,61 @@
+---
+source: graphql_rs_native/src/language/parser.rs
+expression: "object_definition::<(&str,\n                     ErrorKind)>(&source)(&source.body).unwrap_or_else(|_|\n                                                                           panic!(\"Test failed\"))"
+---
+[
+  "",
+  {
+    "kind": "ObjectTypeDefinition",
+    "loc": {
+      "start": 0,
+      "end": 20
+    },
+    "description": null,
+    "name": {
+      "kind": "Name",
+      "loc": {
+        "start": 5,
+        "end": 9
+      },
+      "value": "User"
+    },
+    "interfaces": null,
+    "directives": null,
+    "fields": [
+      {
+        "kind": "FieldDefinition",
+        "loc": {
+          "start": 12,
+          "end": 18
+        },
+        "description": null,
+        "name": {
+          "kind": "Name",
+          "loc": {
+            "start": 12,
+            "end": 14
+          },
+          "value": "id"
+        },
+        "arguments": null,
+        "type": {
+          "kind": "NamedType",
+          "kind": "NamedType",
+          "loc": {
+            "start": 16,
+            "end": 18
+          },
+          "name": {
+            "kind": "Name",
+            "loc": {
+              "start": 16,
+              "end": 18
+            },
+            "value": "ID"
+          }
+        },
+        "directives": null
+      }
+    ]
+  }
+]
