@@ -1082,12 +1082,12 @@ fn document<'a, E: ParseError<&'a str>>(source: &'a Source) -> IResult<&'a str, 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use insta::assert_json_snapshot_matches;
+    use insta::assert_json_snapshot;
 
     #[test]
     fn test_fields_definition_x() {
         let source = Source::new("{f:S l:S }".to_owned(), None, None);
-        assert_json_snapshot_matches!(
+        assert_json_snapshot!(
             fields_definition::<nom::error::VerboseError<&str>>(&source)(&source.body)
                 .unwrap_or_else(|_| panic!("Test failed"))
         );
@@ -1096,16 +1096,16 @@ mod tests {
     #[test]
     fn test_fields_definition() {
         let source = Source::new("{ id: ID }".to_owned(), None, None);
-        assert_json_snapshot_matches!(fields_definition::<(&str, ErrorKind)>(&source)(
-            &source.body
-        )
-        .unwrap_or_else(|_| panic!("Test failed")));
+        assert_json_snapshot!(
+            fields_definition::<(&str, ErrorKind)>(&source)(&source.body)
+                .unwrap_or_else(|_| panic!("Test failed"))
+        );
     }
 
     #[test]
     fn test_union_definition_1() {
         let source = Source::new("union MyUnion = MemberA | MemberB x".to_owned(), None, None);
-        assert_json_snapshot_matches!(union_definition::<nom::error::VerboseError<&str>>(&source)(
+        assert_json_snapshot!(union_definition::<nom::error::VerboseError<&str>>(&source)(
             &source.body
         )
         .unwrap_or_else(|_| panic!("Test failed")));
@@ -1114,67 +1114,67 @@ mod tests {
     #[test]
     fn test_schema_definition() {
         let source = Source::new("schema @abc {}".to_owned(), None, None);
-        assert_json_snapshot_matches!(schema_definition::<(&str, ErrorKind)>(&source)(
-            &source.body
-        )
-        .unwrap_or_else(|_| panic!("Test failed")));
+        assert_json_snapshot!(
+            schema_definition::<(&str, ErrorKind)>(&source)(&source.body)
+                .unwrap_or_else(|_| panic!("Test failed"))
+        );
     }
 
     #[test]
     fn test_type_system_definition() {
         let source = Source::new("schema {}".to_owned(), None, None);
-        assert_json_snapshot_matches!(type_system_definition::<(&str, ErrorKind)>(&source)(
-            &source.body
-        )
-        .unwrap_or_else(|_| panic!("Test failed")));
+        assert_json_snapshot!(
+            type_system_definition::<(&str, ErrorKind)>(&source)(&source.body)
+                .unwrap_or_else(|_| panic!("Test failed"))
+        );
     }
 
     #[test]
     fn test_float_value() {
         let source = Source::new("1.1".to_owned(), None, None);
-        assert_json_snapshot_matches!(float_value::<(&str, ErrorKind)>(&source)(&source.body)
+        assert_json_snapshot!(float_value::<(&str, ErrorKind)>(&source)(&source.body)
             .unwrap_or_else(|_| panic!("Test failed")));
     }
 
     #[test]
     fn test_string_value_1() {
         let source = Source::new("\"\" ".to_owned(), None, None);
-        assert_json_snapshot_matches!(string_value::<(&str, ErrorKind)>(&source)(&source.body)
+        assert_json_snapshot!(string_value::<(&str, ErrorKind)>(&source)(&source.body)
             .unwrap_or_else(|_| panic!("Test failed")));
     }
 
     #[test]
     fn test_string_value_2() {
         let source = Source::new("\"My test text\" ".to_owned(), None, None);
-        assert_json_snapshot_matches!(string_value::<(&str, ErrorKind)>(&source)(&source.body)
+        assert_json_snapshot!(string_value::<(&str, ErrorKind)>(&source)(&source.body)
             .unwrap_or_else(|_| panic!("Test failed")));
     }
 
     #[test]
     fn test_string_value_3() {
         let source = Source::new("\"\"\" \"\"\" ".to_owned(), None, None);
-        assert_json_snapshot_matches!(string_value::<(&str, ErrorKind)>(&source)(&source.body)
+        assert_json_snapshot!(string_value::<(&str, ErrorKind)>(&source)(&source.body)
             .unwrap_or_else(|_| panic!("Test failed")));
     }
 
     #[test]
     fn test_string_value_4() {
         let source = Source::new("\"\"\"My test text\"\"\" ".to_owned(), None, None);
-        assert_json_snapshot_matches!(string_value::<(&str, ErrorKind)>(&source)(&source.body)
+        assert_json_snapshot!(string_value::<(&str, ErrorKind)>(&source)(&source.body)
             .unwrap_or_else(|_| panic!("Test failed")));
     }
 
     #[test]
     fn test_string_value_5() {
         let source = Source::new("\" He said: \\\"Hello\\\" \" ".to_owned(), None, None);
-        assert_json_snapshot_matches!(string_value::<(&str, ErrorKind)>(&source)(&source.body)
+        assert_json_snapshot!(string_value::<(&str, ErrorKind)>(&source)(&source.body)
             .unwrap_or_else(|_| panic!("Test failed")));
     }
 
     #[test]
     fn test_string_value_6() {
         let source = Source::new("\"\"\" He said: \"Hello\" \"\"\" ".to_owned(), None, None);
-        assert_json_snapshot_matches!(string_value::<(&str, ErrorKind)>(&source)(&source.body)
+        assert_json_snapshot!(string_value::<(&str, ErrorKind)>(&source)(&source.body)
             .unwrap_or_else(|_| panic!("Test failed")));
     }
     #[test]
@@ -1193,19 +1193,19 @@ mod tests {
     #[test]
     fn test_object_definition_1() {
         let source = Source::new("type User { id: ID }".to_owned(), None, None);
-        assert_json_snapshot_matches!(object_definition::<(&str, ErrorKind)>(&source)(
-            &source.body
-        )
-        .unwrap_or_else(|_| panic!("Test failed")));
+        assert_json_snapshot!(
+            object_definition::<(&str, ErrorKind)>(&source)(&source.body)
+                .unwrap_or_else(|_| panic!("Test failed"))
+        );
     }
 
     #[test]
     fn test_object_definition_2() {
         let source = Source::new("type User".to_owned(), None, None);
-        assert_json_snapshot_matches!(object_definition::<(&str, ErrorKind)>(&source)(
-            &source.body
-        )
-        .unwrap_or_else(|_| panic!("Test failed")));
+        assert_json_snapshot!(
+            object_definition::<(&str, ErrorKind)>(&source)(&source.body)
+                .unwrap_or_else(|_| panic!("Test failed"))
+        );
     }
 
     #[test]
@@ -1217,36 +1217,36 @@ mod tests {
             None,
             None,
         );
-        assert_json_snapshot_matches!(object_definition::<(&str, ErrorKind)>(&source)(
-            &source.body
-        )
-        .unwrap_or_else(|_| panic!("Test failed")));
+        assert_json_snapshot!(
+            object_definition::<(&str, ErrorKind)>(&source)(&source.body)
+                .unwrap_or_else(|_| panic!("Test failed"))
+        );
     }
 
     #[test]
     fn test_type_definition_1() {
         let source = Source::new("input User".to_owned(), None, None);
-        assert_json_snapshot_matches!(type_definition::<(&str, ErrorKind)>(&source)(&source.body)
+        assert_json_snapshot!(type_definition::<(&str, ErrorKind)>(&source)(&source.body)
             .unwrap_or_else(|_| panic!("Test failed")));
     }
 
     #[test]
     fn test_definition() {
         let source = Source::new("schema {}".to_owned(), None, None);
-        assert_json_snapshot_matches!(definition::<(&str, ErrorKind)>(&source)(&source.body)
+        assert_json_snapshot!(definition::<(&str, ErrorKind)>(&source)(&source.body)
             .unwrap_or_else(|_| panic!("Test failed")));
     }
 
     #[test]
     fn test_document_1() {
         let source = Source::new("schema {}".to_owned(), None, None);
-        assert_json_snapshot_matches!(document::<nom::error::VerboseError<&str>>(&source)
+        assert_json_snapshot!(document::<nom::error::VerboseError<&str>>(&source)
             .unwrap_or_else(|_| panic!("Test failed")));
     }
 
     #[test]
     fn test_document_2() {
-        assert_json_snapshot_matches!(document::<(&str, ErrorKind)>(
+        assert_json_snapshot!(document::<(&str, ErrorKind)>(
             &Source::new("
     input TestInput {
         id: Int!
@@ -1309,7 +1309,7 @@ mod tests {
 
     #[test]
     fn test_document_3() {
-        assert_json_snapshot_matches!(document::<nom::error::VerboseError<&str>>(&Source::new(
+        assert_json_snapshot!(document::<nom::error::VerboseError<&str>>(&Source::new(
             "type User".to_owned(),
             None,
             None

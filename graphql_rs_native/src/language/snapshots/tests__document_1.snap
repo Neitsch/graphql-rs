@@ -1,0 +1,27 @@
+---
+source: graphql_rs_native/src/language/parser.rs
+expression: "document::<nom::error::VerboseError<&str>>(&source).unwrap_or_else(|_|\n                                                                       panic!(\"Test failed\"))"
+---
+[
+  "",
+  {
+    "kind": "Document",
+    "loc": {
+      "start": 0,
+      "end": 9
+    },
+    "definitions": [
+      {
+        "kind": "TypeSystemDefinition",
+        "kind": "SchemaDefinition",
+        "kind": "SchemaDefinition",
+        "loc": {
+          "start": 0,
+          "end": 9
+        },
+        "directives": null,
+        "operationTypes": []
+      }
+    ]
+  }
+]

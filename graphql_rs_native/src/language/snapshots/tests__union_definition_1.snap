@@ -1,0 +1,56 @@
+---
+source: graphql_rs_native/src/language/parser.rs
+expression: "union_definition::<nom::error::VerboseError<&str>>(&source)(&source.body).unwrap_or_else(|_|\n                                                                                             panic!(\"Test failed\"))"
+---
+[
+  "x",
+  {
+    "kind": "UnionTypeDefinition",
+    "loc": {
+      "start": 0,
+      "end": 34
+    },
+    "description": null,
+    "name": {
+      "kind": "Name",
+      "loc": {
+        "start": 6,
+        "end": 13
+      },
+      "value": "MyUnion"
+    },
+    "directives": null,
+    "types": [
+      {
+        "kind": "NamedType",
+        "loc": {
+          "start": 16,
+          "end": 23
+        },
+        "name": {
+          "kind": "Name",
+          "loc": {
+            "start": 16,
+            "end": 23
+          },
+          "value": "MemberA"
+        }
+      },
+      {
+        "kind": "NamedType",
+        "loc": {
+          "start": 26,
+          "end": 33
+        },
+        "name": {
+          "kind": "Name",
+          "loc": {
+            "start": 26,
+            "end": 33
+          },
+          "value": "MemberB"
+        }
+      }
+    ]
+  }
+]

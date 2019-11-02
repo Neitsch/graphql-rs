@@ -1,0 +1,38 @@
+---
+source: graphql_rs_native/src/language/parser.rs
+expression: "document::<nom::error::VerboseError<&str>>(&Source::new(\"type User\".to_owned(),\n                                                        None,\n                                                        None)).unwrap_or_else(|_|\n                                                                                  panic!(\"Test failed\"))"
+---
+[
+  "",
+  {
+    "kind": "Document",
+    "loc": {
+      "start": 0,
+      "end": 9
+    },
+    "definitions": [
+      {
+        "kind": "TypeSystemDefinition",
+        "kind": "TypeDefinition",
+        "kind": "ObjectTypeDefinition",
+        "kind": "ObjectTypeDefinition",
+        "loc": {
+          "start": 0,
+          "end": 9
+        },
+        "description": null,
+        "name": {
+          "kind": "Name",
+          "loc": {
+            "start": 5,
+            "end": 9
+          },
+          "value": "User"
+        },
+        "interfaces": null,
+        "directives": null,
+        "fields": null
+      }
+    ]
+  }
+]

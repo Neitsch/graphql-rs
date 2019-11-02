@@ -1,0 +1,15 @@
+---
+source: graphql_rs_native/src/language/parser.rs
+expression: "float_value::<(&str,\n               ErrorKind)>(&source)(&source.body).unwrap_or_else(|_|\n                                                                     panic!(\"Test failed\"))"
+---
+[
+  "",
+  {
+    "kind": "FloatValue",
+    "loc": {
+      "start": 0,
+      "end": 3
+    },
+    "value": "1.1"
+  }
+]
