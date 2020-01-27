@@ -22,7 +22,7 @@ travis-ci = { repository = "neitsch/graphql-rs", branch = "master" }
 
 [dev-dependencies]
 criterion = "0.3"
-insta = "0.12.0"
+insta = "0.13.1"
 
 [[bench]]
 name = "graphql_rs_native_benchmark"
