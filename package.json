@@ -6,7 +6,7 @@
   "author": "Nigel Schuster <Neitsch@users.noreply.github.com>",
   "license": "MIT",
   "dependencies": {
-    "neon-cli": "^0.3.3",
+    "neon-cli": "^0.5.0",
     "node-pre-gyp": "amilajack/node-pre-gyp#neon-compat",
     "node-pre-gyp-github": "^1.4.3"
   },
