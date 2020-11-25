@@ -13,7 +13,7 @@ description = "An attempt to write a rust implementation of graphql-js that is v
 name = "graphql_rs_native"
 
 [dependencies]
-nom = "5.0.0"
+nom = "6.0.1"
 serde_derive = "1.0.80"
 serde = "1.0.80"
 
