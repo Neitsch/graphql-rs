@@ -36,7 +36,7 @@
     "pkg_path": "."
   },
   "devDependencies": {
-    "graphql": "^14.3.0",
+    "graphql": "^15.5.1",
     "jest": "^24.8.0"
   }
 }
